@@ -6,3 +6,8 @@ numpy>=1.24.3
 gdown>=5.1.0
 protobuf<5
 streamlit_camera_input
+tensorflow-cpu==2.15.0
+keras==2.15.0
+numpy==1.24.0
+pillow
+streamlit
