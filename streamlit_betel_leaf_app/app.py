@@ -18,7 +18,7 @@ def _download(url: str, dest_path: str):
     # Fallback to urllib
     urllib.request.urlretrieve(url, dest_path)
 
-MODEL_PATH = "models/model.h5"  # or models/model.keras
+MODEL_PATH = "models/Betel_Leaf_Model.h5"  # or models/model.keras
 
 @st.cache_resource
 def load_model_cached():
