@@ -6,3 +6,5 @@ numpy>=1.24.3
 gdown>=5.1.0
 protobuf<5
 av
+opencv-python
+streamlit-webrtc
