@@ -18,7 +18,8 @@ def _download(url: str, dest_path: str):
     # Fallback to urllib
     urllib.request.urlretrieve(url, dest_path)
 
-MODEL_PATH = "models/Betel_Leaf_Model.h5"  # or models/model.keras
+# ✅ Use correct model path
+MODEL_PATH = "models/Betel_Leaf_Model.h5"
 
 @st.cache_resource
 def load_model_cached():
@@ -28,7 +29,7 @@ def load_model_cached():
         url = st.secrets.get("MODEL_URL", None)
         if not url:
             st.error(
-                "Model file not found at 'models/model.h5' and no MODEL_URL secret set.\n"
+                "Model file not found at 'models/Betel_Leaf_Model.h5' and no MODEL_URL secret set.\n"
                 "Either commit your model to models/ or set MODEL_URL in Streamlit secrets."
             )
             st.stop()
@@ -60,6 +61,7 @@ def get_class_names(num: int):
         names += [f"class_{i}" for i in range(len(names), num)]
     return names[:num]
 
+# -------------------- Streamlit UI --------------------
 st.set_page_config(page_title="Betel Leaf Detection", page_icon="🌿", layout="centered")
 st.title("🌿 Betel Leaf Detection")
 st.caption("Upload a betel leaf image or take a picture. The model runs server-side.")
@@ -115,7 +117,8 @@ if file:
 
 with st.expander("ℹ️ Setup tips"):
     st.markdown(
-        "- Put your model at `models/model.h5` **or** set a `MODEL_URL` secret to auto-download on deploy.\n"
+        "- Put your model at `models/Betel_Leaf_Model.h5` **or** set a `MODEL_URL` secret to auto-download on deploy.\n"
         "- Set `CLASS_NAMES` secret like `Healthy,Diseased` to show nice labels.\n"
         "- Set `IMG_SIZE` secret like `224,224` to match your training size."
     )
+
