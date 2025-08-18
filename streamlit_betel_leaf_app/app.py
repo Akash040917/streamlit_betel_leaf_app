@@ -12,10 +12,10 @@ model = load_model()
 
 # Define class names (customized)
 CLASS_NAMES = [
-    "Healthy_Green",
-    "Anthracnose_Green",
-    "BacterialLeafSpot_Green",
-    "Healthy_Red"
+    "Anthracnose_Green",       # Hijau_Antraknos
+    "BacterialLeafSpot_Green", # Hijau_Karat
+    "Healthy_Green",           # Hijau_Sehat
+    "Healthy_Red"              # Merah_Sehat
 ]
 
 # Streamlit App
