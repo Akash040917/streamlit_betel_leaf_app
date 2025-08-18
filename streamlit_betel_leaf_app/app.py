@@ -2,9 +2,8 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import cv2
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
-import av
+from streamlit_camera_input import camera_input
+import csv
 
 # -------------------------------
 # Load Model
@@ -26,7 +25,7 @@ CLASS_NAMES = [
 # App Layout
 # -------------------------------
 st.set_page_config(page_title="Betel Leaf Disease Detection", layout="wide")
-tabs = st.tabs(["Home", "Predict", "About Leaf", "About Us", "Contact Us"])
+tabs = st.tabs(["Home", "Predict", "About Leaf", "About Us", "Feedback"])
 
 # -------------------------------
 # Home Tab
@@ -49,7 +48,7 @@ with tabs[1]:
         image = Image.open(uploaded_file).convert("RGB")
         st.image(image, caption="Uploaded Image", use_column_width=True)
 
-        # Resize based on input size
+        # Resize & preprocess
         img = image.resize((224, 224))
         img_array = np.array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
@@ -60,28 +59,30 @@ with tabs[1]:
         predicted_class = CLASS_NAMES[class_index]
         confidence = 100 * np.max(score)
 
-        st.markdown(f"###  Prediction: **{predicted_class}**")
-        st.markdown(f"###  Confidence: **{confidence:.2f}%**")
+        st.markdown(f"### Prediction: **{predicted_class}**")
+        st.markdown(f"### Confidence: **{confidence:.2f}%**")
 
-    st.header("Live Webcam Prediction")
+    st.header("Live Camera Prediction")
+    captured_img = camera_input("Capture an image")
 
-    class BetelLeafPredictor(VideoTransformerBase):
-        def transform(self, frame: av.VideoFrame) -> np.ndarray:
-            img = frame.to_ndarray(format="bgr24")
-            img_resized = cv2.resize(img, (224, 224))
-            img_norm = img_resized / 255.0
-            img_exp = np.expand_dims(img_norm, axis=0)
-            pred = model.predict(img_exp)
-            score = tf.nn.softmax(pred[0])
-            class_index = np.argmax(score)
-            predicted_class = CLASS_NAMES[class_index]
-            confidence = 100 * np.max(score)
-            # Overlay text
-            cv2.putText(img, f"{predicted_class} ({confidence:.1f}%)", (10,30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
-            return img
+    if captured_img is not None:
+        img = Image.open(captured_img).convert("RGB")
+        st.image(img, caption="Captured Image", use_column_width=True)
 
-    webrtc_streamer(key="betel-leaf-predict", video_transformer_factory=BetelLeafPredictor)
+        # Resize & preprocess
+        img_resized = img.resize((224, 224))
+        img_array = np.array(img_resized) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+
+        # Prediction
+        pred = model.predict(img_array)
+        score = tf.nn.softmax(pred[0])
+        class_index = np.argmax(score)
+        predicted_class = CLASS_NAMES[class_index]
+        confidence = 100 * np.max(score)
+
+        st.markdown(f"### Prediction: **{predicted_class}**")
+        st.markdown(f"### Confidence: **{confidence:.2f}%**")
 
 # -------------------------------
 # About Leaf Tab
@@ -123,12 +124,12 @@ with tabs[3]:
     with col3:
         st.image("images/member3.jpg", use_column_width=True)
         st.markdown("**Abdul Rawoof M**\n221201001@rajalakshmi.edu.in")
+
 # -------------------------------
-# Contact Us Tab / Feedback
+# Feedback Tab
 # -------------------------------
 with tabs[4]:
-    st.header("💌 Leave Your Feedback")
-
+    st.header("Leave Your Feedback")
     with st.form("feedback_form"):
         name = st.text_input("Your Name")
         email = st.text_input("Your Email")
@@ -137,12 +138,10 @@ with tabs[4]:
         submitted = st.form_submit_button("Submit Feedback")
         
         if submitted:
-            # Save to CSV locally
-            import csv
             with open("feedback.csv", "a", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow([name, email, message])
-            
             st.success("Thank you for your feedback! 🙏 We appreciate it.")
 
     st.markdown("© 2025 ProjectASA2025")
+
