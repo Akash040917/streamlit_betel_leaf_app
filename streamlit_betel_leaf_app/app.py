@@ -123,30 +123,26 @@ with tabs[3]:
     with col3:
         st.image("images/member3.jpg", use_column_width=True)
         st.markdown("**Abdul Rawoof M**\n221201001@rajalakshmi.edu.in")
-
 # -------------------------------
-# Contact Us Tab
+# Contact Us Tab / Feedback
 # -------------------------------
 with tabs[4]:
-# ===== Feedback / Contact Us Tab =====
-st.header("Leave Your Feedback")
+    st.header("💌 Leave Your Feedback")
 
-with st.form("feedback_form"):
-    name = st.text_input("Your Name")
-    email = st.text_input("Your Email")
-    message = st.text_area("Your Message / Feedback")
-    
-    submitted = st.form_submit_button("Submit Feedback")
-    
-    if submitted:
-        # Optional: Save to CSV locally
-        import csv
-        with open("feedback.csv", "a", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([name, email, message])
+    with st.form("feedback_form"):
+        name = st.text_input("Your Name")
+        email = st.text_input("Your Email")
+        message = st.text_area("Your Message / Feedback")
         
-        st.success("Thank you for your feedback! 🙏 We appreciate it.")
+        submitted = st.form_submit_button("Submit Feedback")
+        
+        if submitted:
+            # Save to CSV locally
+            import csv
+            with open("feedback.csv", "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([name, email, message])
+            
+            st.success("Thank you for your feedback! 🙏 We appreciate it.")
 
     st.markdown("© 2025 ProjectASA2025")
-
-
