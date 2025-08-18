@@ -6,7 +6,7 @@ from PIL import Image
 # Load model from local models folder
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras")
+    return tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.h5")
 
 model = load_model()
 
