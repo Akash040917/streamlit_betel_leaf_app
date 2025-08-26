@@ -1,7 +1,6 @@
-tensorflow==2.15.0
-keras==2.15.0
-numpy==1.24.3
-pillow
+tensorflow==2.19.0
+keras==3.10.0
+numpy>=1.24.0
+pillow>=9.5.0
 streamlit>=1.32
-gdown 
-
+protobuf<5
