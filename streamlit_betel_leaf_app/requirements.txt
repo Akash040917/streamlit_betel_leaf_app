@@ -1,6 +1,6 @@
-tensorflow-cpu==2.15.0
+tensorflow==2.15.0
 keras==2.15.0
-numpy==1.24.0
+numpy==1.24.3
 pillow
-streamlit
-streamlit-camera-input-live
+streamlit>=1.32
+gdown
