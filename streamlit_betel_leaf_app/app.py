@@ -9,7 +9,7 @@ import csv
 # -------------------------------
 @st.cache_resource
 def load_model():
-    return tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.h5")
+    return tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras")
 
 model = load_model()
 
