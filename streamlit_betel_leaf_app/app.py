@@ -1,8 +1,9 @@
 import streamlit as st
-import tensorflow as tf
+import av
 import numpy as np
+import tensorflow as tf
 from PIL import Image
-import csv
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 
 # -------------------------------
 # Load Model
@@ -15,6 +16,7 @@ def load_model():
     )
 
 model = load_model()
+INPUT_HEIGHT, INPUT_WIDTH = model.input_shape[1:3]
 
 CLASS_NAMES = [
     "Anthracnose_Green",
@@ -24,42 +26,44 @@ CLASS_NAMES = [
 ]
 
 # -------------------------------
-# Custom Video Transformer
+# Live Video Transformer
 # -------------------------------
 class VideoTransformer(VideoTransformerBase):
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
+        img_pil = Image.fromarray(img).convert("RGB")
+        img_resized = img_pil.resize((INPUT_WIDTH, INPUT_HEIGHT))
+        img_array = np.array(img_resized) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-        # Preprocess for model
-        img_resized = tf.image.resize(img, (224, 224))
-        img_array = np.expand_dims(img_resized / 255.0, axis=0)
-
-        # Predict
-        preds = model.predict(img_array, verbose=0)
+        preds = model.predict(img_array)
         score = tf.nn.softmax(preds[0])
         class_index = np.argmax(score)
-        label = f"{CLASS_NAMES[class_index]} ({100*np.max(score):.2f}%)"
+        predicted_class = CLASS_NAMES[class_index]
+        confidence = 100 * np.max(score)
 
-        # Draw label on frame
+        # overlay prediction text on frame
         import cv2
-        cv2.putText(img, label, (10, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+        text = f"{predicted_class} ({confidence:.1f}%)"
+        cv2.putText(img, text, (10, 40),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         return img
 
 # -------------------------------
-# Streamlit Layout
+# App Layout
 # -------------------------------
-st.set_page_config(page_title="Live Betel Leaf Monitoring", page_icon="🌿")
+st.set_page_config(page_title="Betel Leaf Live Detection", layout="wide")
+st.title("🌿 Betel Leaf Live Monitoring")
 
-st.title("🌿 Live Betel Leaf Disease Monitoring")
-st.write("This demo uses your webcam to monitor betel leaves in **real-time**.")
+st.markdown("Show your betel leaf in front of the webcam for **real-time disease detection**.")
 
 webrtc_streamer(
-    key="live-monitor",
+    key="betel-live",
     video_transformer_factory=VideoTransformer,
-    media_stream_constraints={"video": True, "audio": False}
+    media_stream_constraints={"video": True, "audio": False},
 )
+
 
 
 
