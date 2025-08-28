@@ -3,15 +3,13 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import csv
-import os
 
 # -------------------------------
 # Load Model
 # -------------------------------
 @st.cache_resource
 def load_model():
-    MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "Betel_Leaf_Model.keras")
-    return tf.keras.models.load_model(MODEL_PATH)
+    return tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras")
 
 model = load_model()
 
@@ -143,6 +141,7 @@ with tabs[4]:
 
     st.markdown("---")
     st.markdown("© 2025 **ProjectASA2025** | Built with ❤️ using Streamlit & TensorFlow")
+
 
 
 
