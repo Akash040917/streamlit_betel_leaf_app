@@ -8,8 +8,8 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
 # Load Model
 # -------------------------------
 @st.cache_resource
-def load_model():
-    return tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras")
+import tensorflow as tf
+model = tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras", compile=False)
 
 model = load_model()
 
