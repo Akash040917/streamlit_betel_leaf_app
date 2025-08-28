@@ -2,13 +2,18 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
+import csv
 
 # -------------------------------
 # Load Model
 # -------------------------------
 @st.cache_resource
-model = tf.keras.models.load_model("streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras", compile=False)
+def load_model():
+    return tf.keras.models.load_model(
+        "streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras",
+        compile=False
+    )
+
 model = load_model()
 
 CLASS_NAMES = [
