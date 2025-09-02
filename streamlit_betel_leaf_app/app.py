@@ -232,17 +232,50 @@ Key phytochemicals: hydroxychavicol, eugenol (antimicrobial, antioxidant).
 # -----------------------
 with tabs[3]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="header-title">Team</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-title">Our Team</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="section-sub">
+        We are final-year Mechatronics students with a strong passion for Artificial Intelligence and Machine Learning.
+        For this project, we trained a deep learning model on a Kaggle betel leaf dataset with **4 classes**, achieving a **validation accuracy of ~85%**.
+        Our goal is to provide a lightweight, user-friendly web application for visual detection of betel leaf diseases, bridging AI research and practical agriculture.
+        </div>
+        """, unsafe_allow_html=True
+    )
+
+    # Team members
     cols = st.columns(3)
     members = [
-        {"name":"Abdul Rawoof M","reg":"221201001","email":"221201001@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member3.jpg"},
-        {"name":"Akash Raghuram R L","reg":"221201004","email":"221201004@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member1.jpg"},
-        {"name":"Sarath Kumar R","reg":"221201048","email":"221201048@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member2.jpg"},
+        {
+            "name":"Abdul Rawoof M",
+            "reg":"221201001",
+            "email":"221201001@rajalakshmi.edu.in",
+            "img":"streamlit_betel_leaf_app/images/member3.jpg",
+        },
+        {
+            "name":"Akash Raghuram R L",
+            "reg":"221201004",
+            "email":"221201004@rajalakshmi.edu.in",
+            "img":"streamlit_betel_leaf_app/images/member1.jpg",
+        },
+        {
+            "name":"Sarath Kumar R",
+            "reg":"221201048",
+            "email":"221201048@rajalakshmi.edu.in",
+            "img":"streamlit_betel_leaf_app/images/member2.jpg",
+        },
     ]
+
     for c,m in zip(cols,members):
         with c:
-            st.image(m["img"], use_column_width=True)
-            st.markdown(f"**{m['name']}**\nRegistration: {m['reg']}\nEmail: {m['email']}")
+            st.image(m["img"], width=220)
+            st.markdown(
+                f"**{m['name']}**  \n"
+                f"*{m['role']}*  \n"
+                f"Registration: {m['reg']}  \n"
+                f"Email: {m['email']}", unsafe_allow_html=True
+            )
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
