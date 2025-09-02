@@ -217,7 +217,7 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">About Piper betle</div>', unsafe_allow_html=True)
-    st.image("images/betel.jpg", caption="Piper betle", use_column_width=True)
+    st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", use_column_width=True)
     st.markdown("""
 **Piper betle** is a perennial vine from the Piperaceae family. Cultivated across South & Southeast Asia.
 Leaves are used in traditional medicine, culinary applications, and cultural rituals.
@@ -235,9 +235,9 @@ with tabs[3]:
     st.markdown('<div class="header-title">Team</div>', unsafe_allow_html=True)
     cols = st.columns(3)
     members = [
-        {"name":"Abdul Rawoof M","reg":"221201001","email":"221201001@rajalakshmi.edu.in","img":"images/member3.jpg"},
-        {"name":"Akash Raghuram R L","reg":"221201004","email":"221201004@rajalakshmi.edu.in","img":"images/member1.jpg"},
-        {"name":"Sarath Kumar R","reg":"221201048","email":"221201048@rajalakshmi.edu.in","img":"images/member2.jpg"},
+        {"name":"Abdul Rawoof M","reg":"221201001","email":"221201001@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member3.jpg"},
+        {"name":"Akash Raghuram R L","reg":"221201004","email":"221201004@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member1.jpg"},
+        {"name":"Sarath Kumar R","reg":"221201048","email":"221201048@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member2.jpg"},
     ]
     for c,m in zip(cols,members):
         with c:
