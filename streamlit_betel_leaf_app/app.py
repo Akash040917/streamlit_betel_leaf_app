@@ -2,7 +2,7 @@
 import streamlit as st
 import tensorflow as tf
 import numpy as np
-from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+from PIL import Image, ImageEnhance, ImageOps
 import os, io, csv, json, time, pandas as pd
 
 # Optional matplotlib plotting
@@ -15,7 +15,7 @@ except Exception:
 # -----------------------
 # Page config & style
 # -----------------------
-st.set_page_config(page_title="Betel Leaf Disease Detector.AI", layout="wide")
+st.set_page_config(page_title="Betel Leaf Disease Detector", layout="wide")
 
 PRIMARY = "#1f6f3a"
 ACCENT = "#e9f5ec"
@@ -63,7 +63,7 @@ footer {{
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Load model
+# Model loading
 # -----------------------
 @st.cache_resource
 def load_model_from_paths():
@@ -90,38 +90,38 @@ CLASS_NAMES = [
 # -----------------------
 # Helper functions
 # -----------------------
-def preprocess_image_enhanced(pil_img, target_size=(224,224)):
-    """Preprocess image with enhancement for better model confidence"""
+def preprocess_pil_image_enhanced(pil_img, target_size=(224,224)):
     pil_img = pil_img.convert("RGB")
     pil_img = ImageOps.exif_transpose(pil_img)
     pil_img = pil_img.resize(target_size, resample=Image.LANCZOS)
-    pil_img = ImageEnhance.Sharpness(pil_img).enhance(1.3)
-    pil_img = ImageEnhance.Contrast(pil_img).enhance(1.1)
-    pil_img = pil_img.filter(ImageFilter.UnsharpMask(radius=2, percent=150))
+    pil_img = ImageEnhance.Sharpness(pil_img).enhance(1.2)
+    pil_img = ImageEnhance.Contrast(pil_img).enhance(1.05)
     arr = np.array(pil_img).astype(np.float32)/255.0
     arr = np.expand_dims(arr, axis=0)
     return arr
 
-def tta_predict(model, pil_img, target_size=(224,224), T=1.2):
-    """Run TTA + temperature scaling for stable, high-confidence prediction"""
-    tta_transforms = [
-        lambda im: im,
-        lambda im: ImageOps.mirror(im),
-        lambda im: im.rotate(15, expand=False),
-        lambda im: im.rotate(-15, expand=False),
-        lambda im: ImageEnhance.Color(im).enhance(0.9),
-        lambda im: ImageEnhance.Color(im).enhance(1.1),
-        lambda im: ImageEnhance.Brightness(im).enhance(1.05),
-        lambda im: ImageEnhance.Brightness(im).enhance(0.95),
-    ]
+def tta_predictions(model, pil_img, tta_transforms=None, target_size=(224,224)):
+    if tta_transforms is None:
+        tta_transforms = [
+            lambda im: im,
+            lambda im: ImageOps.mirror(im),
+            lambda im: im.rotate(15, expand=False),
+            lambda im: im.rotate(-15, expand=False),
+            lambda im: ImageEnhance.Color(im).enhance(0.9),
+            lambda im: ImageEnhance.Color(im).enhance(1.1),
+        ]
     probs_list = []
     for tfm in tta_transforms:
         im2 = tfm(pil_img.copy())
-        arr = preprocess_image_enhanced(im2, target_size)
-        preds = model.predict(arr, verbose=0)
-        probs_list.append(tf.nn.softmax(preds[0]).numpy())
+        arr = preprocess_pil_image_enhanced(im2, target_size)
+        preds = model.predict(arr)
+        probs = tf.nn.softmax(preds[0]).numpy()
+        probs_list.append(probs)
     avg_probs = np.mean(np.stack(probs_list, axis=0), axis=0)
-    # Temperature scaling
+    return avg_probs
+
+def predict_with_tta(model, pil_img, T=1.0):
+    avg_probs = tta_predictions(model, pil_img)
     logits = np.log(avg_probs + 1e-12)
     scaled_logits = logits / T
     scaled_probs = tf.nn.softmax(scaled_logits).numpy()
@@ -147,31 +147,32 @@ def file_size_human(path):
 # -----------------------
 # Tabs
 # -----------------------
-tabs = st.tabs(["Home","Predict","About Betel Leaf","About Us","Feedback"])
+tabs = st.tabs(["Home", "Predict", "About Betel Leaf", "About Us", "Feedback"])
 
 # -----------------------
 # HOME
 # -----------------------
 with tabs[0]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="header-title">Betel Leaf Disease Detection.AI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Visual diagnosis of betel leaf conditions.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-title">Betel Leaf Disease Detection</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">A lightweight, production-ready UI for visual diagnosis of betel leaf conditions.</div>', unsafe_allow_html=True)
     col1, col2 = st.columns([2,1])
     with col1:
-        st.markdown("### Dataset")
-        st.markdown("~4000 labeled images across 4 classes.\n (train ~3200, val ~800)")
+        st.markdown("### Dataset & Model")
+        st.markdown("Trained on ~4000 images across 4 classes.")
         st.write(", ".join(CLASS_NAMES))
         st.markdown("### Model info")
-        if model:
+        if model is not None:
             st.success(f"Model loaded from `{model_path}` ({file_size_human(model_path)})")
             with st.expander("Show model summary"):
                 st.code(model_summary_to_text(model), language="text")
         else: st.error("Model not found.")
         st.markdown("### Sources")
-        st.markdown("- Kaggle dataset\n- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
+        st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
+        st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
     with col2:
         st.markdown("### Quick Actions")
-        st.markdown("- Use Predict tab to run inference.")
+        st.markdown("- Use Predict tab to run inference.\n- Update About Us with team info.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -181,34 +182,32 @@ with tabs[1]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Predict Betel Leaf Condition</div>', unsafe_allow_html=True)
     upload_col, cam_col = st.columns(2)
-    # ---- Upload Image ----
     with upload_col:
         st.subheader("Upload Image")
         uploaded_file = st.file_uploader("Upload betel leaf image", type=["jpg","jpeg","png"])
-        if uploaded_file and model:
+        if uploaded_file:
             img = Image.open(uploaded_file)
-            st.image(img, caption="Uploaded", use_column_width=True)
-            with st.spinner("Predicting..."):
-                idx, probs = tta_predict(model, img)
-                st.success(f"Prediction: {CLASS_NAMES[idx]}")
-                st.write(f"Confidence: {100*np.max(probs):.2f}%")
-                df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
-                df_probs = df_probs.sort_values("probability", ascending=False).reset_index(drop=True)
-                st.table(df_probs.style.format({"probability":"{:.2f}%"}))
-    # ---- Camera ----
+            st.image(img, caption="Uploaded Image", use_column_width=True)
+            if model:
+                with st.spinner("Predicting..."):
+                    idx, probs = predict_with_tta(model, img)
+                    st.success(f"Prediction: {CLASS_NAMES[idx]}")
+                    st.write(f"Confidence: {100*np.max(probs):.2f}%")
+                    df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
+                    st.table(df_probs.style.format({"probability":"{:.2f}%"}))
     with cam_col:
         st.subheader("Use Camera")
         captured = st.camera_input("Take a photo")
-        if captured and model:
+        if captured:
             img = Image.open(captured)
-            st.image(img, caption="Captured", use_column_width=True)
-            with st.spinner("Predicting..."):
-                idx, probs = tta_predict(model, img)
-                st.success(f"Prediction: {CLASS_NAMES[idx]}")
-                st.write(f"Confidence: {100*np.max(probs):.2f}%")
-                df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
-                df_probs = df_probs.sort_values("probability", ascending=False).reset_index(drop=True)
-                st.table(df_probs.style.format({"probability":"{:.2f}%"}))
+            st.image(img, caption="Captured Image", use_column_width=True)
+            if model:
+                with st.spinner("Predicting..."):
+                    idx, probs = predict_with_tta(model, img)
+                    st.success(f"Prediction: {CLASS_NAMES[idx]}")
+                    st.write(f"Confidence: {100*np.max(probs):.2f}%")
+                    df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
+                    st.table(df_probs.style.format({"probability":"{:.2f}%"}))
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -216,15 +215,19 @@ with tabs[1]:
 # -----------------------
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown('<div class="header-title">About Piper betle</div>', unsafe_allow_html=True)
+    st.markdown('<div class="header-title">About Piper betle (Betel Leaf)</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        **Piper betle** is a perennial vine from the Piperaceae family, widely cultivated in South and Southeast Asia.
+        Heart-shaped leaves are used in traditional medicine, culinary applications, and cultural rituals.
+        Key phytochemicals include **hydroxychavicol** and **eugenol**, which exhibit antimicrobial and antioxidant properties.
+        """
+    )
     st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", use_column_width=True)
-    st.markdown("""
-**Piper betle** is a perennial vine from the Piperaceae family. Cultivated across South & Southeast Asia.
-Leaves are used in traditional medicine, culinary applications, and cultural rituals.
-Key phytochemicals: hydroxychavicol, eugenol (antimicrobial, antioxidant).
-""")
-    st.markdown("### Varieties & types")
-    st.markdown("- Green vs Red types\n- Regional cultivars, e.g., Banaras Pan (GI-protected in India)")
+    st.markdown("### Varieties & Classes")
+    st.markdown("- Green vs Red leaves\n- Regional cultivars (e.g., Banaras Pan, GI-protected in India)")
+    st.markdown("### Sources")
+    st.markdown("- Wikipedia: Piper betle\n- Wikimedia Commons: Piper betle images\n- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -236,32 +239,25 @@ with tabs[3]:
     st.markdown(
         """
         <div class="section-sub">
-        We are final-year Mechatronics students passionate about Artificial Intelligence and Machine Learning.
-        For this project, we trained a deep learning model on a Kaggle betel leaf dataset with <b>4 classes</b>, achieving a <b>validation accuracy of ~85%</b>.
-        Our mission is to provide a lightweight, user-friendly web application for detecting betel leaf diseases, bridging AI research and practical agriculture.
+        We are final-year Mechatronics students passionate about AI and Deep Learning.
+        This project uses a Kaggle betel leaf dataset with <b>4 classes</b> and achieves ~85% validation accuracy.
+        Our mission: provide a practical, easy-to-use AI tool for disease detection in betel leaves.
         </div>
         """, unsafe_allow_html=True
     )
-
     cols = st.columns(3)
     members = [
         {"name":"Abdul Rawoof M","reg":"221201001","email":"221201001@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member3.jpg","role":"AI Model & Preprocessing"},
         {"name":"Akash Raghuram R L","reg":"221201004","email":"221201004@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member1.jpg","role":"Frontend & Streamlit App"},
         {"name":"Sarath Kumar R","reg":"221201048","email":"221201048@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member2.jpg","role":"Data Collection & Evaluation"},
     ]
-
     for c,m in zip(cols,members):
         with c:
-            st.markdown(f'<div style="height:250px; display:flex; justify-content:center; align-items:center;">', unsafe_allow_html=True)
-            st.image(m["img"], use_column_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.image(m["img"], width=220)
             st.markdown(
-                f"<b>{m['name']}</b><br>"
-                f"<i>{m['role']}</i><br>"
-                f"Reg: {m['reg']}<br>"
-                f"Email: {m['email']}", unsafe_allow_html=True
+                f"**{m['name']}**\n*{m['role']}*\nRegistration: {m['reg']}\nEmail: {m['email']}",
+                unsafe_allow_html=True
             )
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -295,3 +291,4 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
