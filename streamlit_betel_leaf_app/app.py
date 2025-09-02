@@ -68,12 +68,7 @@ footer {{
 @st.cache_resource
 def load_model_from_paths():
     possible_paths = [
-        "/mnt/data/Betel_Leaf_Model.keras",
-        "/mnt/data/Betel_Leaf_Model.h5",
-        "models/Betel_Leaf_Model.keras",
-        "models/Betel_Leaf_Model.h5",
-        "Betel_Leaf_Model.keras",
-        "Betel_Leaf_Model.h5",
+        "streamlit_betel_leaf_app/models/Betel_Leaf_Model.keras",
     ]
     for p in possible_paths:
         if os.path.exists(p):
