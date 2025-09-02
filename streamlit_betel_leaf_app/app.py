@@ -217,7 +217,7 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">About Piper betle</div>', unsafe_allow_html=True)
-    st.image("images/banner.jpg", caption="Piper betle", use_column_width=True)
+    st.image("images/betel.jpg", caption="Piper betle", use_column_width=True)
     st.markdown("""
 **Piper betle** is a perennial vine from the Piperaceae family. Cultivated across South & Southeast Asia.
 Leaves are used in traditional medicine, culinary applications, and cultural rituals.
