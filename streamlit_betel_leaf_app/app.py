@@ -271,7 +271,6 @@ with tabs[3]:
             st.image(m["img"], width=220)
             st.markdown(
                 f"**{m['name']}**  \n"
-                f"*{m['role']}*  \n"
                 f"Registration: {m['reg']}  \n"
                 f"Email: {m['email']}", unsafe_allow_html=True
             )
