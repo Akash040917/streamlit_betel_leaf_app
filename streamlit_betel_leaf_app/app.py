@@ -159,7 +159,7 @@ with tabs[0]:
     col1, col2 = st.columns([2,1])
     with col1:
         st.markdown("### Dataset")
-        st.markdown("~4000 labeled images across 4 classes.\n -train ~3200. val ~800")
+        st.markdown("~4000 labeled images across 4 classes.\n (train ~3200, val ~800)")
         st.write(", ".join(CLASS_NAMES))
         st.markdown("### Model info")
         if model:
@@ -171,7 +171,7 @@ with tabs[0]:
         st.markdown("- Kaggle dataset\n- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
     with col2:
         st.markdown("### Quick Actions")
-        st.markdown("- Use Predict tab to run inference.\n- Update About Us with team info.")
+        st.markdown("- Use Predict tab to run inference.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -217,7 +217,7 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">About Piper betle</div>', unsafe_allow_html=True)
-    st.image("images/betel_leaf_main.jpg", caption="Piper betle", use_column_width=True)
+    st.image("images/banner.jpg", caption="Piper betle", use_column_width=True)
     st.markdown("""
 **Piper betle** is a perennial vine from the Piperaceae family. Cultivated across South & Southeast Asia.
 Leaves are used in traditional medicine, culinary applications, and cultural rituals.
