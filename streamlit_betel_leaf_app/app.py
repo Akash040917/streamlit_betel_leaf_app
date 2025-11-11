@@ -63,25 +63,49 @@ footer {{
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Model loading
+# Model loading (robust)
 # -----------------------
+MODEL_FILENAMES = [
+    "betel_leaf_model.keras",
+    "mobilenetv2_final.keras",
+    "efficientnet_model.keras"
+]
+
 @st.cache_resource
 def load_model_from_paths():
-    possible_paths = [
-        "streamlit_betel_leaf_app/models/betel_leaf_model.keras",
-        "models/betel_leaf_model.keras",
-        "betel_leaf_model.keras"
-    ]
+    """
+    Try multiple likely paths to find and load the model.
+    Returns (model_object_or_None, path_or_None, error_message_or_None)
+    """
+    possible_paths = []
+    # Add combinations for repo-layouts (deployment vs local)
+    for fname in MODEL_FILENAMES:
+        possible_paths.extend([
+            os.path.join("streamlit_betel_leaf_app", "models", fname),
+            os.path.join("models", fname),
+            fname
+        ])
+
+    tried = []
     for p in possible_paths:
         if os.path.exists(p):
+            tried.append(p)
             try:
-                m = tf.keras.models.load_model(p)
-                return m, p
+                # compile=False is faster and avoids needing optimizer state
+                m = tf.keras.models.load_model(p, compile=False)
+                return m, p, None
             except Exception as e:
-                st.warning(f"Found model at {p} but failed to load: {e}")
-    return None, None
+                return None, p, f"Found model at {p} but failed to load: {e}"
+        else:
+            tried.append(p)
 
-model, model_path = load_model_from_paths()
+    # nothing found
+    tried_str = ", ".join(possible_paths)
+    return None, None, f"Model not found. Tried: {tried_str}"
+
+# load model once per session
+model, model_path, model_err = load_model_from_paths()
+
 CLASS_NAMES = [
     "Anthracnose_Green",
     "BacterialLeafSpot_Green",
@@ -121,6 +145,7 @@ def tta_predictions(model, pil_img, tta_transforms=None, target_size=(224,224)):
         im2 = tfm(pil_img.copy())
         arr = preprocess_pil_image_advanced(im2, target_size)
         preds = model.predict(arr, verbose=0)
+        # ensure probs length equals classes (softmax)
         probs = tf.nn.softmax(preds[0]).numpy()
         probs_list.append(probs)
     avg_probs = np.mean(np.stack(probs_list, axis=0), axis=0)
@@ -161,9 +186,13 @@ with tabs[0]:
         st.markdown("Trained on ~4000 images across 4 classes.")
         st.write(", ".join(CLASS_NAMES))
         st.markdown("### Model info")
-        if model is not None:
+        if model is not None and model_path:
             st.success(f"Model loaded from `{model_path}` ({file_size_human(model_path)})")
-        else: st.error("Model not found.")
+        else:
+            st.error("Model not found or failed to load.")
+            if model_err:
+                st.info(model_err)
+            st.markdown("Make sure `models/betel_leaf_model.keras` is present in the repo or enable Git LFS and re-add the model.")
         st.markdown("### Sources")
         st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
         st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
@@ -191,6 +220,8 @@ with tabs[1]:
                     st.write(f"Confidence: {100*np.max(probs):.2f}%")
                     df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
                     st.table(df_probs.style.format({"probability":"{:.2f}%"}))
+            else:
+                st.warning("Model not available. See Home tab for details.")
     st.markdown("---")
     st.subheader("Or upload an image")
     uploaded_file = st.file_uploader("Upload betel leaf image", type=["jpg","jpeg","png"])
@@ -204,6 +235,8 @@ with tabs[1]:
                 st.write(f"Confidence: {100*np.max(probs):.2f}%")
                 df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
                 st.table(df_probs.style.format({"probability":"{:.2f}%"}))
+        else:
+            st.warning("Model not available. See Home tab for details.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -278,6 +311,7 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
