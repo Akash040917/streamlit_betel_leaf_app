@@ -66,9 +66,7 @@ footer {{
 # Model loading (robust)
 # -----------------------
 MODEL_FILENAMES = [
-    "betel_leaf_model.keras",
-    "mobilenetv2_final.keras",
-    "efficientnet_model.keras"
+    "streamlit_betel_leaf_app/models/betel_leaf_model.keras",
 ]
 
 @st.cache_resource
