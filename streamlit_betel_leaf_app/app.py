@@ -169,7 +169,7 @@ with tabs[0]:
     col1, col2 = st.columns([2,1])
     with col1:
         st.markdown("### Dataset & Model")
-        st.markdown("Trained on ~4000 images across 4 classes.")
+        st.markdown("Trained on ~10000 images across 4 classes.")
         st.write(", ".join(CLASS_NAMES))
         st.markdown("### Model info")
         if model is not None and model_path:
@@ -182,9 +182,15 @@ with tabs[0]:
         st.markdown("### Sources")
         st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
         st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
-    with col2:
-        st.markdown("### Quick Actions")
-        st.markdown("- Use Predict tab to run inference.\n- Update About Us with team info.")
+        st.markdown("- Google Colab Repository: https://colab.research.google.com/drive/1n9WBDyMrcmL4cJAGzCqq0xT8eonoBU3t?authuser=1#scrollTo=wOiXmhuNLmIo")
+with col2:
+    st.markdown("### Quick Actions")
+    st.markdown("""
+    - 🧠 **Run Disease Detection** → Go to the *Predict* tab and upload or capture an image.  
+    - 🧬 **Learn About Betel Leaves** → Visit the *About Betel Leaf* tab for details and varieties.  
+    - 👨‍💻 **Meet the Team** → Check out the *About Us* tab to know our developers.  
+    - 💬 **Share Your Thoughts** → Use the *Feedback* tab to help us improve the app.
+    """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -237,8 +243,15 @@ with tabs[2]:
 Heart-shaped leaves are used in traditional medicine, culinary applications, and cultural rituals.
 Key phytochemicals include **hydroxychavicol** and **eugenol**, which exhibit antimicrobial and antioxidant properties.
 """)
-    st.markdown("### Varieties & Classes")
-    st.markdown("- Green vs Red leaves\n- Regional cultivars (e.g., Banaras Pan, GI-protected in India)")
+st.markdown("### Varieties & Classes")
+st.markdown("""
+**Betel leaves** are broadly categorized based on color and regional variety:
+- **Green Varieties:** Common in South India; softer texture and mild aroma.  
+- **Red Varieties:** Thicker leaves, stronger flavor, preferred for traditional uses.  
+- **Regional Cultivars:** Includes *Banarasi Pan*, *Kalkatta Pan*, and other GI-protected varieties of India.  
+-   Each type differs in taste, medicinal value, and oil content.
+""")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
