@@ -86,18 +86,14 @@ def load_model_from_paths():
             fname
         ])
 
-    tried = []
     for p in possible_paths:
         if os.path.exists(p):
-            tried.append(p)
             try:
                 # compile=False is faster and avoids needing optimizer state
                 m = tf.keras.models.load_model(p, compile=False)
                 return m, p, None
             except Exception as e:
                 return None, p, f"Found model at {p} but failed to load: {e}"
-        else:
-            tried.append(p)
 
     # nothing found
     tried_str = ", ".join(possible_paths)
@@ -105,6 +101,13 @@ def load_model_from_paths():
 
 # load model once per session
 model, model_path, model_err = load_model_from_paths()
+
+# show model input shape for debugging (optional)
+if model is not None:
+    try:
+        st.write("Model input shape:", model.input_shape)
+    except Exception:
+        pass
 
 CLASS_NAMES = [
     "Anthracnose_Green",
@@ -114,9 +117,9 @@ CLASS_NAMES = [
 ]
 
 # -----------------------
-# Helper functions
+# Helper functions (300x300)
 # -----------------------
-def preprocess_pil_image_advanced(pil_img, target_size=(224,224)):
+def preprocess_pil_image_advanced(pil_img, target_size=(300,300)):
     pil_img = pil_img.convert("RGB")
     pil_img = ImageOps.exif_transpose(pil_img)
     pil_img = pil_img.resize(target_size, resample=Image.LANCZOS)
@@ -124,11 +127,11 @@ def preprocess_pil_image_advanced(pil_img, target_size=(224,224)):
     pil_img = ImageEnhance.Contrast(pil_img).enhance(1.1)
     pil_img = ImageEnhance.Brightness(pil_img).enhance(1.05)
     pil_img = ImageOps.autocontrast(pil_img)
-    arr = np.array(pil_img).astype(np.float32)/255.0
-    arr = np.expand_dims(arr, axis=0)
+    arr = np.array(pil_img).astype(np.float32) / 255.0
+    arr = np.expand_dims(arr, axis=0)  # shape (1, H, W, 3)
     return arr
 
-def tta_predictions(model, pil_img, tta_transforms=None, target_size=(224,224)):
+def tta_predictions(model, pil_img, tta_transforms=None, target_size=(300,300)):
     if tta_transforms is None:
         tta_transforms = [
             lambda im: im,
@@ -145,14 +148,13 @@ def tta_predictions(model, pil_img, tta_transforms=None, target_size=(224,224)):
         im2 = tfm(pil_img.copy())
         arr = preprocess_pil_image_advanced(im2, target_size)
         preds = model.predict(arr, verbose=0)
-        # ensure probs length equals classes (softmax)
         probs = tf.nn.softmax(preds[0]).numpy()
         probs_list.append(probs)
     avg_probs = np.mean(np.stack(probs_list, axis=0), axis=0)
     return avg_probs
 
-def predict_with_tta(model, pil_img, T=0.8):
-    avg_probs = tta_predictions(model, pil_img)
+def predict_with_tta(model, pil_img, T=0.8, target_size=(300,300)):
+    avg_probs = tta_predictions(model, pil_img, target_size=target_size)
     logits = np.log(avg_probs + 1e-12)
     scaled_logits = logits / T
     scaled_probs = tf.nn.softmax(scaled_logits).numpy()
@@ -215,7 +217,7 @@ with tabs[1]:
             st.image(img, caption="Captured Image", use_column_width=True)
             if model:
                 with st.spinner("Predicting..."):
-                    idx, probs = predict_with_tta(model, img)
+                    idx, probs = predict_with_tta(model, img, target_size=(300,300))
                     st.success(f"Prediction: {CLASS_NAMES[idx]}")
                     st.write(f"Confidence: {100*np.max(probs):.2f}%")
                     df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
@@ -230,7 +232,7 @@ with tabs[1]:
         st.image(img, caption="Uploaded Image", use_column_width=True)
         if model:
             with st.spinner("Predicting..."):
-                idx, probs = predict_with_tta(model, img)
+                idx, probs = predict_with_tta(model, img, target_size=(300,300))
                 st.success(f"Prediction: {CLASS_NAMES[idx]}")
                 st.write(f"Confidence: {100*np.max(probs):.2f}%")
                 df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
@@ -311,6 +313,7 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
