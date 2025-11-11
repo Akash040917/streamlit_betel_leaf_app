@@ -205,8 +205,7 @@ with tabs[1]:
         captured = st.camera_input("Take a photo")
         if captured:
             img = Image.open(captured)
-            # Display smaller preview for webcam
-            st.image(img, caption="Captured Image", width=350)
+            st.image(img, caption="Preview", width=300)
             if model:
                 with st.spinner("Predicting..."):
                     idx, probs = predict_with_tta(model, img)
@@ -221,8 +220,7 @@ with tabs[1]:
     uploaded_file = st.file_uploader("Upload betel leaf image", type=["jpg","jpeg","png"])
     if uploaded_file:
         img = Image.open(uploaded_file)
-        # Smaller display for uploaded image too
-        st.image(img, caption="Uploaded Image", width=350)
+        st.image(img, caption="Preview", width=300)
         if model:
             with st.spinner("Predicting..."):
                 idx, probs = predict_with_tta(model, img)
@@ -240,7 +238,7 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">About Piper betle (Betel Leaf)</div>', unsafe_allow_html=True)
-    st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", use_column_width=True)
+    st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", width=450)
     st.markdown("""
     **Piper betle** is a perennial vine from the Piperaceae family, widely cultivated in South and Southeast Asia.  
     Heart-shaped leaves are used in traditional medicine, culinary applications, and cultural rituals.  
@@ -277,8 +275,15 @@ with tabs[3]:
     ]
     for c, m in zip(cols, members):
         with c:
-            st.image(m["img"], width=220)
-            st.markdown(f"**{m['name']}**\n*{m['role']}*\nRegistration: {m['reg']}\nEmail: {m['email']}", unsafe_allow_html=True)
+            st.image(m["img"], use_column_width=True, clamp=True)
+            st.markdown(f"""
+            <div style='text-align:center;'>
+            <b>{m['name']}</b><br>
+            <i>{m['role']}</i><br>
+            Registration: {m['reg']}<br>
+            Email: <a href='mailto:{m['email']}'>{m['email']}</a>
+            </div>
+            """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -312,6 +317,7 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
