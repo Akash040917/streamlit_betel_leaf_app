@@ -66,9 +66,7 @@ footer {{
 # Model loading
 # -----------------------
 MODEL_FILENAMES = [
-    "betel_leaf_model.keras",
-    "mobilenetv2_final.keras",
-    "efficientnet_model.keras"
+    "betel_leaf_efficientnetv2.keras",
 ]
 
 @st.cache_resource
@@ -179,11 +177,11 @@ with tabs[0]:
             st.error("Model not found or failed to load.")
             if model_err:
                 st.info(model_err)
-            st.markdown("Make sure `models/betel_leaf_model.keras` is present in the repo or enable Git LFS and re-add the model.")
+            st.markdown("Make sure `models/betel_leaf_efficientnetv2.keras` is present in the repo or enable Git LFS and re-add the model.")
         st.markdown("### Sources")
         st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
         st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
-        st.markdown("- Google Colab Repository: https://colab.research.google.com/drive/1n9WBDyMrcmL4cJAGzCqq0xT8eonoBU3t?authuser=1#scrollTo=wOiXmhuNLmIo")
+        st.markdown("- Google Colab Repository: https://colab.research.google.com/drive/1N9yE22hXCalUVC_ir7nzaj9e7pgolTVu?usp=sharing")
     with col2:
         st.markdown("### Quick Actions")
         st.markdown("""
