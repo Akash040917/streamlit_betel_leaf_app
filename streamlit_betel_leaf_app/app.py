@@ -65,23 +65,33 @@ footer {{
 # -----------------------
 # Model loading
 # -----------------------
+MODEL_FILENAMES = [
+    "betel_leaf_model.keras",
+    "mobilenetv2_final.keras",
+    "efficientnet_model.keras"
+]
+
 @st.cache_resource
 def load_model_from_paths():
-    possible_paths = [
-        "streamlit_betel_leaf_app/models/mobilenetv2_final.keras",
-        "models/mobilenetv2_final.keras",
-        "mobilenetv2_final.keras"
-    ]
+    possible_paths = []
+    for fname in MODEL_FILENAMES:
+        possible_paths.extend([
+            os.path.join("streamlit_betel_leaf_app", "models", fname),
+            os.path.join("models", fname),
+            fname
+        ])
     for p in possible_paths:
         if os.path.exists(p):
             try:
-                m = tf.keras.models.load_model(p)
-                return m, p
+                m = tf.keras.models.load_model(p, compile=False)
+                return m, p, None
             except Exception as e:
-                st.warning(f"Found model at {p} but failed to load: {e}")
-    return None, None
+                return None, p, f"Found model at {p} but failed to load: {e}"
+    tried_str = ", ".join(possible_paths)
+    return None, None, f"Model not found. Tried: {tried_str}"
 
-model, model_path = load_model_from_paths()
+model, model_path, model_err = load_model_from_paths()
+
 CLASS_NAMES = [
     "Anthracnose_Green",
     "BacterialLeafSpot_Green",
@@ -92,7 +102,7 @@ CLASS_NAMES = [
 # -----------------------
 # Helper functions
 # -----------------------
-def preprocess_pil_image_advanced(pil_img, target_size=(224,224)):
+def preprocess_pil_image_advanced(pil_img, target_size=(300,300)):
     pil_img = pil_img.convert("RGB")
     pil_img = ImageOps.exif_transpose(pil_img)
     pil_img = pil_img.resize(target_size, resample=Image.LANCZOS)
@@ -100,11 +110,11 @@ def preprocess_pil_image_advanced(pil_img, target_size=(224,224)):
     pil_img = ImageEnhance.Contrast(pil_img).enhance(1.1)
     pil_img = ImageEnhance.Brightness(pil_img).enhance(1.05)
     pil_img = ImageOps.autocontrast(pil_img)
-    arr = np.array(pil_img).astype(np.float32)/255.0
+    arr = np.array(pil_img).astype(np.float32) / 255.0
     arr = np.expand_dims(arr, axis=0)
     return arr
 
-def tta_predictions(model, pil_img, tta_transforms=None, target_size=(224,224)):
+def tta_predictions(model, pil_img, tta_transforms=None, target_size=(300,300)):
     if tta_transforms is None:
         tta_transforms = [
             lambda im: im,
@@ -127,7 +137,7 @@ def tta_predictions(model, pil_img, tta_transforms=None, target_size=(224,224)):
     return avg_probs
 
 def predict_with_tta(model, pil_img, T=0.8):
-    avg_probs = tta_predictions(model, pil_img)
+    avg_probs = tta_predictions(model, pil_img, target_size=(300,300))
     logits = np.log(avg_probs + 1e-12)
     scaled_logits = logits / T
     scaled_probs = tf.nn.softmax(scaled_logits).numpy()
@@ -138,10 +148,12 @@ def file_size_human(path):
     try:
         s = os.path.getsize(path)
         for unit in ['B','KB','MB','GB']:
-            if s < 1024.0: return f"{s:3.1f}{unit}"
+            if s < 1024.0:
+                return f"{s:3.1f}{unit}"
             s /= 1024.0
         return f"{s:.1f}TB"
-    except: return "Unknown"
+    except:
+        return "Unknown"
 
 # -----------------------
 # Tabs
@@ -158,18 +170,28 @@ with tabs[0]:
     col1, col2 = st.columns([2,1])
     with col1:
         st.markdown("### Dataset & Model")
-        st.markdown("Trained on ~4000 images across 4 classes.")
+        st.markdown("Trained on ~10000 images across 4 classes.")
         st.write(", ".join(CLASS_NAMES))
         st.markdown("### Model info")
-        if model is not None:
+        if model is not None and model_path:
             st.success(f"Model loaded from `{model_path}` ({file_size_human(model_path)})")
-        else: st.error("Model not found.")
+        else:
+            st.error("Model not found or failed to load.")
+            if model_err:
+                st.info(model_err)
+            st.markdown("Make sure `models/betel_leaf_model.keras` is present in the repo or enable Git LFS and re-add the model.")
         st.markdown("### Sources")
         st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
         st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
+        st.markdown("- Google Colab Repository: https://colab.research.google.com/drive/1n9WBDyMrcmL4cJAGzCqq0xT8eonoBU3t?authuser=1#scrollTo=wOiXmhuNLmIo")
     with col2:
         st.markdown("### Quick Actions")
-        st.markdown("- Use Predict tab to run inference.\n- Update About Us with team info.")
+        st.markdown("""
+        - 🧠 **Run Disease Detection** → Go to the *Predict* tab and upload or capture an image.  
+        - 🧬 **Learn About Betel Leaves** → Visit the *About Betel Leaf* tab for details and varieties.  
+        - 👨‍💻 **Meet the Team** → Check out the *About Us* tab to know our developers.  
+        - 💬 **Share Your Thoughts** → Use the *Feedback* tab to help us improve the app.
+        """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -183,27 +205,31 @@ with tabs[1]:
         captured = st.camera_input("Take a photo")
         if captured:
             img = Image.open(captured)
-            st.image(img, caption="Captured Image", use_column_width=True)
+            st.image(img, caption="Preview", width=300)
             if model:
                 with st.spinner("Predicting..."):
                     idx, probs = predict_with_tta(model, img)
                     st.success(f"Prediction: {CLASS_NAMES[idx]}")
                     st.write(f"Confidence: {100*np.max(probs):.2f}%")
-                    df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
-                    st.table(df_probs.style.format({"probability":"{:.2f}%"}))
+                    df_probs = pd.DataFrame({"class": CLASS_NAMES, "probability": probs*100})
+                    st.table(df_probs.style.format({"probability": "{:.2f}%"}))
+            else:
+                st.warning("Model not available. See Home tab for details.")
     st.markdown("---")
     st.subheader("Or upload an image")
     uploaded_file = st.file_uploader("Upload betel leaf image", type=["jpg","jpeg","png"])
     if uploaded_file:
         img = Image.open(uploaded_file)
-        st.image(img, caption="Uploaded Image", use_column_width=True)
+        st.image(img, caption="Preview", width=300)
         if model:
             with st.spinner("Predicting..."):
                 idx, probs = predict_with_tta(model, img)
                 st.success(f"Prediction: {CLASS_NAMES[idx]}")
                 st.write(f"Confidence: {100*np.max(probs):.2f}%")
-                df_probs = pd.DataFrame({"class":CLASS_NAMES,"probability":probs*100})
-                st.table(df_probs.style.format({"probability":"{:.2f}%"}))
+                df_probs = pd.DataFrame({"class": CLASS_NAMES, "probability": probs*100})
+                st.table(df_probs.style.format({"probability": "{:.2f}%"}))
+        else:
+            st.warning("Model not available. See Home tab for details.")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -212,14 +238,20 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">About Piper betle (Betel Leaf)</div>', unsafe_allow_html=True)
-    st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", use_column_width=True)
+    st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", width=450)
     st.markdown("""
-**Piper betle** is a perennial vine from the Piperaceae family, widely cultivated in South and Southeast Asia.
-Heart-shaped leaves are used in traditional medicine, culinary applications, and cultural rituals.
-Key phytochemicals include **hydroxychavicol** and **eugenol**, which exhibit antimicrobial and antioxidant properties.
-""")
-    st.markdown("### Varieties & Classes")
-    st.markdown("- Green vs Red leaves\n- Regional cultivars (e.g., Banaras Pan, GI-protected in India)")
+    **Piper betle** is a perennial vine from the Piperaceae family, widely cultivated in South and Southeast Asia.  
+    Heart-shaped leaves are used in traditional medicine, culinary applications, and cultural rituals.  
+    Key phytochemicals include **hydroxychavicol** and **eugenol**, which exhibit antimicrobial and antioxidant properties.
+    """)
+    st.markdown("### Varieties & Classes 🌿")
+    st.markdown("""
+    **Betel leaves** are broadly categorized based on color and regional variety:
+    - 🟢 **Green Varieties:** Common in South India; softer texture and mild aroma.  
+    - 🔴 **Red Varieties:** Thicker leaves, stronger flavor, preferred for traditional uses.  
+    - 📍 **Regional Cultivars:** Includes *Banarasi Pan*, *Kalkatta Pan*, and other GI-protected varieties of India.  
+    - 🌱 Each type differs in taste, medicinal value, and oil content.
+    """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -230,21 +262,28 @@ with tabs[3]:
     st.markdown('<div class="header-title">Our Team</div>', unsafe_allow_html=True)
     st.markdown("""
     <div class="section-sub">
-    We are final-year Mechatronics students passionate about AI and Deep Learning.
-    This project uses a Kaggle betel leaf dataset with <b>4 classes</b> and achieves ~85% validation accuracy.
+    We are final-year Mechatronics students passionate about AI and Deep Learning.  
+    This project uses a Kaggle betel leaf dataset with <b>4 classes</b> and achieves ~85% validation accuracy.  
     Our mission: provide a practical, easy-to-use AI tool for disease detection in betel leaves.
     </div>
     """, unsafe_allow_html=True)
     cols = st.columns(3)
     members = [
-        {"name":"Abdul Rawoof M","reg":"221201001","email":"221201001@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member3.jpg","role":"AI Model & Preprocessing"},
-        {"name":"Akash Raghuram R L","reg":"221201004","email":"221201004@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member1.jpg","role":"Frontend & Streamlit App"},
-        {"name":"Sarath Kumar R","reg":"221201048","email":"221201048@rajalakshmi.edu.in","img":"streamlit_betel_leaf_app/images/member2.jpg","role":"Data Collection & Evaluation"},
+        {"name": "Abdul Rawoof M", "reg": "221201001", "email": "221201001@rajalakshmi.edu.in", "img": "streamlit_betel_leaf_app/images/member3.jpg", "role": "AI Model & Preprocessing"},
+        {"name": "Akash Raghuram R L", "reg": "221201004", "email": "221201004@rajalakshmi.edu.in", "img": "streamlit_betel_leaf_app/images/member1.jpg", "role": "Frontend & Streamlit App"},
+        {"name": "Sarath Kumar R", "reg": "221201048", "email": "221201048@rajalakshmi.edu.in", "img": "streamlit_betel_leaf_app/images/member2.jpg", "role": "Data Collection & Evaluation"},
     ]
-    for c,m in zip(cols,members):
+    for c, m in zip(cols, members):
         with c:
-            st.image(m["img"], width=220)
-            st.markdown(f"**{m['name']}**\n*{m['role']}*\nRegistration: {m['reg']}\nEmail: {m['email']}", unsafe_allow_html=True)
+            st.image(m["img"], use_column_width=True, clamp=True)
+            st.markdown(f"""
+            <div style='text-align:center;'>
+            <b>{m['name']}</b><br>
+            <i>{m['role']}</i><br>
+            Registration: {m['reg']}<br>
+            Email: <a href='mailto:{m['email']}'>{m['email']}</a>
+            </div>
+            """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -256,13 +295,13 @@ with tabs[4]:
     with st.form("feedback_form", clear_on_submit=True):
         fname = st.text_input("Full name")
         femail = st.text_input("Email")
-        ftype = st.selectbox("Feedback type", ["Bug","Feature","Data","Other"])
-        rating = st.slider("Rate app (1-5)", 1,5,4)
+        ftype = st.selectbox("Feedback type", ["Bug", "Feature", "Data", "Other"])
+        rating = st.slider("Rate app (1-5)", 1, 5, 4)
         fmsg = st.text_area("Feedback")
         submit = st.form_submit_button("Submit")
         if submit:
             try:
-                with open("feedback.csv","a",newline="",encoding="utf-8") as f:
+                with open("feedback.csv", "a", newline="", encoding="utf-8") as f:
                     writer = csv.writer(f)
                     writer.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), fname, femail, ftype, rating, fmsg, model_path])
                 st.success("Feedback saved!")
@@ -278,6 +317,11 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
+
+
+
+
 
 
 
