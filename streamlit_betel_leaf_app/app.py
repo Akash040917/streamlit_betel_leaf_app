@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
 import os, io, csv, time, pandas as pd
+import traceback
 
 # Optional matplotlib plotting
 try:
@@ -63,30 +64,55 @@ footer {{
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Model loading
+# Model loading (robust) - UPDATED
 # -----------------------
-MODEL_FILENAMES = [
+# include the new filename and keep fallbacks
+MODEL_BASENAMES = [
     "betel_leaf_efficientnetv2.keras",
+    "betel_leaf_model.keras",
+    "mobilenetv2_final.keras",
+    "efficientnet_model.keras",
+]
+
+SEARCH_DIRS = [
+    os.path.join("streamlit_betel_leaf_app", "models"),
+    "models",
+    ".",
 ]
 
 @st.cache_resource
 def load_model_from_paths():
-    possible_paths = []
-    for fname in MODEL_FILENAMES:
-        possible_paths.extend([
-            os.path.join("streamlit_betel_leaf_app", "models", fname),
-            os.path.join("models", fname),
-            fname
-        ])
-    for p in possible_paths:
-        if os.path.exists(p):
-            try:
-                m = tf.keras.models.load_model(p, compile=False)
-                return m, p, None
-            except Exception as e:
-                return None, p, f"Found model at {p} but failed to load: {e}"
-    tried_str = ", ".join(possible_paths)
-    return None, None, f"Model not found. Tried: {tried_str}"
+    """
+    Tries all combinations of SEARCH_DIRS x MODEL_BASENAMES.
+    Continues on load errors and returns first successfully loaded model.
+    Returns (model_or_None, path_tried_or_None, error_message_or_None)
+    """
+    attempted = []
+    load_errors = []
+    for d in SEARCH_DIRS:
+        for base in MODEL_BASENAMES:
+            p = os.path.join(d, base)
+            if os.path.exists(p):
+                attempted.append(p)
+                try:
+                    m = tf.keras.models.load_model(p, compile=False)
+                    return m, p, None
+                except Exception as e:
+                    # record error and continue to try other candidates
+                    tb = traceback.format_exc()
+                    load_errors.append(f"{p}: {str(e)}")
+                    # continue trying other files
+            else:
+                attempted.append(p)  # track paths that were checked (even if missing)
+
+    # If none loaded, prepare helpful error message
+    attempted_str = "\n".join(attempted)
+    if load_errors:
+        err_msg = "Tried these paths (files exist and some failed to load or were missing):\n"
+        err_msg += attempted_str + "\n\nLoad errors:\n" + "\n".join(load_errors)
+    else:
+        err_msg = "Model not found. Tried paths:\n" + attempted_str
+    return None, None, err_msg
 
 model, model_path, model_err = load_model_from_paths()
 
@@ -176,7 +202,11 @@ with tabs[0]:
         else:
             st.error("Model not found or failed to load.")
             if model_err:
-                st.info(model_err)
+                # show condensed error message with expand option
+                with st.expander("Model loader details (click to expand)"):
+                    st.code(model_err)
+                st.info("Make sure the model file is committed to the repository under one of these folders:\n" +
+                        ", ".join(SEARCH_DIRS))
             st.markdown("Make sure `models/betel_leaf_efficientnetv2.keras` is present in the repo or enable Git LFS and re-add the model.")
         st.markdown("### Sources")
         st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
@@ -315,6 +345,7 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
