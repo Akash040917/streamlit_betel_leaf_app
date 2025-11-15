@@ -64,9 +64,8 @@ footer {{
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Model loading (robust) - UPDATED
+# Model loading (robust)
 # -----------------------
-# include the new filename and keep fallbacks
 MODEL_BASENAMES = [
     "betel_leaf_efficientnetv2.keras",
     "betel_leaf_model.keras",
@@ -98,14 +97,11 @@ def load_model_from_paths():
                     m = tf.keras.models.load_model(p, compile=False)
                     return m, p, None
                 except Exception as e:
-                    # record error and continue to try other candidates
                     tb = traceback.format_exc()
                     load_errors.append(f"{p}: {str(e)}")
-                    # continue trying other files
             else:
-                attempted.append(p)  # track paths that were checked (even if missing)
+                attempted.append(p)
 
-    # If none loaded, prepare helpful error message
     attempted_str = "\n".join(attempted)
     if load_errors:
         err_msg = "Tried these paths (files exist and some failed to load or were missing):\n"
@@ -123,50 +119,84 @@ CLASS_NAMES = [
     "Healthy_Red",
 ]
 
+# ==== NEW: use EfficientNetV2 preprocessing exactly like Colab ====
+from tensorflow.keras.applications.efficientnet_v2 import preprocess_input
+
+if model is not None:
+    IMG_H, IMG_W = model.input_shape[1], model.input_shape[2]
+else:
+    IMG_H, IMG_W = 300, 300  # fallback, should not be used normally
+
 # -----------------------
-# Helper functions
+# Helper functions (FIXED)
 # -----------------------
-def preprocess_pil_image_advanced(pil_img, target_size=(300,300)):
+def preprocess_pil_image_advanced(pil_img, target_size=None):
+    """
+    Preprocess exactly like training/Colab:
+    - RGB
+    - resize to model input size
+    - EfficientNetV2 preprocess_input
+    """
+    if target_size is None:
+        target_size = (IMG_W, IMG_H)
+
     pil_img = pil_img.convert("RGB")
     pil_img = ImageOps.exif_transpose(pil_img)
     pil_img = pil_img.resize(target_size, resample=Image.LANCZOS)
-    pil_img = ImageEnhance.Sharpness(pil_img).enhance(1.3)
-    pil_img = ImageEnhance.Contrast(pil_img).enhance(1.1)
-    pil_img = ImageEnhance.Brightness(pil_img).enhance(1.05)
-    pil_img = ImageOps.autocontrast(pil_img)
-    arr = np.array(pil_img).astype(np.float32) / 255.0
+
+    arr = np.array(pil_img).astype(np.float32)
+    arr = preprocess_input(arr)          # ✅ same as Colab
     arr = np.expand_dims(arr, axis=0)
     return arr
 
-def tta_predictions(model, pil_img, tta_transforms=None, target_size=(300,300)):
+def tta_predictions(model, pil_img, tta_transforms=None, target_size=None):
+    """
+    Simple TTA: original + mirror + small rotations.
+    Always uses the same preprocessing as training.
+    """
+    if target_size is None:
+        target_size = (IMG_W, IMG_H)
+
     if tta_transforms is None:
         tta_transforms = [
             lambda im: im,
             lambda im: ImageOps.mirror(im),
             lambda im: im.rotate(15, expand=False),
             lambda im: im.rotate(-15, expand=False),
-            lambda im: ImageEnhance.Color(im).enhance(0.9),
-            lambda im: ImageEnhance.Color(im).enhance(1.1),
-            lambda im: ImageEnhance.Brightness(im).enhance(1.1),
-            lambda im: ImageEnhance.Brightness(im).enhance(0.9)
         ]
+
     probs_list = []
     for tfm in tta_transforms:
         im2 = tfm(pil_img.copy())
         arr = preprocess_pil_image_advanced(im2, target_size)
-        preds = model.predict(arr, verbose=0)
-        probs = tf.nn.softmax(preds[0]).numpy()
+        preds = model.predict(arr, verbose=0)[0]
+
+        # if last layer is already softmax, sum ≈ 1
+        if abs(np.sum(preds) - 1.0) < 0.05:
+            probs = preds
+        else:
+            probs = tf.nn.softmax(preds).numpy()
+
         probs_list.append(probs)
+
     avg_probs = np.mean(np.stack(probs_list, axis=0), axis=0)
     return avg_probs
 
-def predict_with_tta(model, pil_img, T=0.8):
-    avg_probs = tta_predictions(model, pil_img, target_size=(300,300))
-    logits = np.log(avg_probs + 1e-12)
-    scaled_logits = logits / T
-    scaled_probs = tf.nn.softmax(scaled_logits).numpy()
-    idx = int(np.argmax(scaled_probs))
-    return idx, scaled_probs
+def predict_with_tta(model, pil_img, T=1.0):
+    """
+    Main prediction helper used by UI.
+    Returns (index, probabilities).
+    """
+    avg_probs = tta_predictions(model, pil_img, target_size=(IMG_W, IMG_H))
+
+    # Optional temperature scaling (T != 1.0 sharpens or smooths)
+    if T is not None and T != 1.0:
+        logits = np.log(avg_probs + 1e-12)
+        logits = logits / T
+        avg_probs = tf.nn.softmax(logits).numpy()
+
+    idx = int(np.argmax(avg_probs))
+    return idx, avg_probs
 
 def file_size_human(path):
     try:
@@ -202,12 +232,16 @@ with tabs[0]:
         else:
             st.error("Model not found or failed to load.")
             if model_err:
-                # show condensed error message with expand option
                 with st.expander("Model loader details (click to expand)"):
                     st.code(model_err)
-                st.info("Make sure the model file is committed to the repository under one of these folders:\n" +
-                        ", ".join(SEARCH_DIRS))
-            st.markdown("Make sure `models/betel_leaf_efficientnetv2.keras` is present in the repo or enable Git LFS and re-add the model.")
+                st.info(
+                    "Make sure the model file is committed to the repository under one of these folders:\n"
+                    + ", ".join(SEARCH_DIRS)
+                )
+            st.markdown(
+                "Make sure `models/betel_leaf_efficientnetv2.keras` is present in the repo "
+                "or enable Git LFS and re-add the model."
+            )
         st.markdown("### Sources")
         st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
         st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
@@ -228,6 +262,7 @@ with tabs[0]:
 with tabs[1]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Predict Betel Leaf Condition</div>', unsafe_allow_html=True)
+
     start_cam = st.checkbox("Start Camera")
     if start_cam:
         captured = st.camera_input("Take a photo")
@@ -243,6 +278,7 @@ with tabs[1]:
                     st.table(df_probs.style.format({"probability": "{:.2f}%"}))
             else:
                 st.warning("Model not available. See Home tab for details.")
+
     st.markdown("---")
     st.subheader("Or upload an image")
     uploaded_file = st.file_uploader("Upload betel leaf image", type=["jpg","jpeg","png"])
@@ -345,6 +381,7 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
