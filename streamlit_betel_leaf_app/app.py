@@ -324,31 +324,54 @@ with tabs[2]:
 with tabs[3]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Our Team</div>', unsafe_allow_html=True)
+
     st.markdown("""
     <div class="section-sub">
-    We are final-year Mechatronics students passionate about AI and Deep Learning.  
-    This project uses a Kaggle betel leaf dataset with <b>4 classes</b> and achieves ~85% validation accuracy.  
-    Our mission: provide a practical, easy-to-use AI tool for disease detection in betel leaves.
+    We are final-year Mechatronics Engineering students with a strong interest in 
+    Artificial Intelligence and Deep Learning.<br>
+    This project uses a Kaggle betel leaf image dataset with <b>4 disease classes</b> 
+    and achieves approximately <b>85% validation accuracy</b>.<br>
+    Our objective is to develop a practical and user-friendly AI-based system 
+    for automated betel leaf disease detection.
     </div>
     """, unsafe_allow_html=True)
+
     cols = st.columns(3)
+
     members = [
-        {"name": "Abdul Rawoof M", "reg": "221201001", "email": "221201001@rajalakshmi.edu.in", "img": "streamlit_betel_leaf_app/images/member3.jpg", "role": "AI Model & Preprocessing"},
-        {"name": "Akash Raghuram R L", "reg": "221201004", "email": "221201004@rajalakshmi.edu.in", "img": "streamlit_betel_leaf_app/images/member1.jpg", "role": "Frontend & Streamlit App"},
-        {"name": "Sarath Kumar R", "reg": "221201048", "email": "221201048@rajalakshmi.edu.in", "img": "streamlit_betel_leaf_app/images/member2.jpg", "role": "Data Collection & Evaluation"},
+        {
+            "name": "Abdul Rawoof M",
+            "reg": "221201001",
+            "email": "221201001@rajalakshmi.edu.in",
+            "role": "Deep Learning Model Development & Image Preprocessing"
+        },
+        {
+            "name": "Akash Raghuram R L",
+            "reg": "221201004",
+            "email": "221201004@rajalakshmi.edu.in",
+            "role": "Application Development & System Integration"
+        },
+        {
+            "name": "Sarath Kumar R",
+            "reg": "221201048",
+            "email": "221201048@rajalakshmi.edu.in",
+            "role": "Dataset Preparation, Testing & Performance Evaluation"
+        }
     ]
+
     for c, m in zip(cols, members):
         with c:
-            st.image(m["img"], use_column_width=True, clamp=True)
             st.markdown(f"""
-            <div style='text-align:center;'>
-            <b>{m['name']}</b><br>
-            <i>{m['role']}</i><br>
-            Registration: {m['reg']}<br>
-            Email: <a href='mailto:{m['email']}'>{m['email']}</a>
+            <div style="text-align:center; padding:12px;">
+                <b>{m['name']}</b><br>
+                <i>{m['role']}</i><br><br>
+                Registration No: {m['reg']}<br>
+                Email: <a href="mailto:{m['email']}">{m['email']}</a>
             </div>
             """, unsafe_allow_html=True)
+
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 # -----------------------
 # FEEDBACK
