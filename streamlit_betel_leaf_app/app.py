@@ -322,50 +322,36 @@ with tabs[2]:
 # ABOUT US
 # -----------------------
 with tabs[3]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    st.markdown('<div class="header-title">Our Team</div>', unsafe_allow_html=True)
+    st.header("Our Team")
+
+    st.write(
+        "We are final-year Mechatronics Engineering students with a strong interest in "
+        "Artificial Intelligence and Deep Learning.\n\n"
+        "This project uses a Kaggle betel leaf image dataset with **4 disease classes** "
+        "and achieves approximately **85% validation accuracy**.\n\n"
+        "Our objective is to develop a practical and user-friendly AI-based system "
+        "for automated betel leaf disease detection."
+    )
 
     st.markdown("""
-    <div class="section-sub">
-    We are final-year Mechatronics Engineering students with a strong interest in 
-    Artificial Intelligence and Deep Learning.<br>
-    This project uses a Kaggle betel leaf image dataset with <b>4 disease classes</b> 
-    and achieves approximately <b>85% validation accuracy</b>.<br>
-    Our objective is to develop a practical and user-friendly AI-based system 
-    for automated betel leaf disease detection.
-    </div>
+    ### 👥 Team Members
 
-    <ul style="font-size:16px; line-height:1.8;">
+    **• Abdul Rawoof M**  
+    *Deep Learning Model Development & Image Preprocessing*  
+    Registration No: 221201001  
+    Email: 221201001@rajalakshmi.edu.in  
 
-        <li>
-            <b>Abdul Rawoof M</b><br>
-            <i>Deep Learning Model Development & Image Preprocessing</i><br>
-            Registration No: 221201001<br>
-            Email: <a href="mailto:221201001@rajalakshmi.edu.in">
-            221201001@rajalakshmi.edu.in</a>
-        </li><br>
+    **• Akash Raghuram R L**  
+    *Application Development & System Integration*  
+    Registration No: 221201004  
+    Email: 221201004@rajalakshmi.edu.in  
 
-        <li>
-            <b>Akash Raghuram R L</b><br>
-            <i>Application Development & System Integration</i><br>
-            Registration No: 221201004<br>
-            Email: <a href="mailto:221201004@rajalakshmi.edu.in">
-            221201004@rajalakshmi.edu.in</a>
-        </li><br>
-
-        <li>
-            <b>Sarath Kumar R</b><br>
-            <i>Dataset Preparation, Testing & Performance Evaluation</i><br>
-            Registration No: 221201048<br>
-            Email: <a href="mailto:221201048@rajalakshmi.edu.in">
-            221201048@rajalakshmi.edu.in</a>
-        </li>
-
-    </ul>
-    """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    **• Sarath Kumar R**  
+    *Dataset Preparation, Testing & Performance Evaluation*  
+    Registration No: 221201048  
+    Email: 221201048@rajalakshmi.edu.in  
+    """)
 
 # -----------------------
 # FEEDBACK
