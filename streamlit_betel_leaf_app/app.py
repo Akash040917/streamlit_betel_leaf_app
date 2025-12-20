@@ -323,6 +323,7 @@ with tabs[2]:
 # -----------------------
 with tabs[3]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
+
     st.markdown('<div class="header-title">Our Team</div>', unsafe_allow_html=True)
 
     st.markdown("""
@@ -336,41 +337,33 @@ with tabs[3]:
     </div>
     """, unsafe_allow_html=True)
 
-    cols = st.columns(3)
+    st.markdown("""
+    <ul style="font-size:16px; line-height:1.8;">
+        <li>
+            <b>Abdul Rawoof M</b><br>
+            <i>Deep Learning Model Development & Image Preprocessing</i><br>
+            Registration No: 221201001<br>
+            Email: <a href="mailto:221201001@rajalakshmi.edu.in">221201001@rajalakshmi.edu.in</a>
+        </li><br>
 
-    members = [
-        {
-            "name": "Abdul Rawoof M",
-            "reg": "221201001",
-            "email": "221201001@rajalakshmi.edu.in",
-            "role": "Deep Learning Model Development & Image Preprocessing"
-        },
-        {
-            "name": "Akash Raghuram R L",
-            "reg": "221201004",
-            "email": "221201004@rajalakshmi.edu.in",
-            "role": "Application Development & System Integration"
-        },
-        {
-            "name": "Sarath Kumar R",
-            "reg": "221201048",
-            "email": "221201048@rajalakshmi.edu.in",
-            "role": "Dataset Preparation, Testing & Performance Evaluation"
-        }
-    ]
+        <li>
+            <b>Akash Raghuram R L</b><br>
+            <i>Application Development & System Integration</i><br>
+            Registration No: 221201004<br>
+            Email: <a href="mailto:221201004@rajalakshmi.edu.in">221201004@rajalakshmi.edu.in</a>
+        </li><br>
 
-    for c, m in zip(cols, members):
-        with c:
-            st.markdown(f"""
-            <div style="text-align:center; padding:12px;">
-                <b>{m['name']}</b><br>
-                <i>{m['role']}</i><br><br>
-                Registration No: {m['reg']}<br>
-                Email: <a href="mailto:{m['email']}">{m['email']}</a>
-            </div>
-            """, unsafe_allow_html=True)
+        <li>
+            <b>Sarath Kumar R</b><br>
+            <i>Dataset Preparation, Testing & Performance Evaluation</i><br>
+            Registration No: 221201048<br>
+            Email: <a href="mailto:221201048@rajalakshmi.edu.in">221201048@rajalakshmi.edu.in</a>
+        </li>
+    </ul>
+    """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 # -----------------------
