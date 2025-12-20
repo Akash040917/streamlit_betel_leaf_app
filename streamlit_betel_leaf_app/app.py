@@ -128,7 +128,7 @@ else:
     IMG_H, IMG_W = 300, 300  # fallback, should not be used normally
 
 # -----------------------
-# Helper functions (FIXED)
+# Helper functions 
 # -----------------------
 def preprocess_pil_image_advanced(pil_img, target_size=None):
     """
@@ -145,7 +145,7 @@ def preprocess_pil_image_advanced(pil_img, target_size=None):
     pil_img = pil_img.resize(target_size, resample=Image.LANCZOS)
 
     arr = np.array(pil_img).astype(np.float32)
-    arr = preprocess_input(arr)          # ✅ same as Colab
+    arr = preprocess_input(arr)          
     arr = np.expand_dims(arr, axis=0)
     return arr
 
@@ -263,7 +263,7 @@ with tabs[1]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Predict Betel Leaf Condition</div>', unsafe_allow_html=True)
 
-# ⚠️ Academic disclaimer
+# Disclaimer
     st.markdown("""
     <div style="
         background:#fff7e6;
@@ -272,9 +272,16 @@ with tabs[1]:
         border-radius:6px;
         margin-bottom:12px;
         font-size:14px;">
-    ⚠️ <b>Note:</b> This AI model is developed for <b>academic, testing, and training purposes only</b>.  
-    Predictions should not be considered as professional agricultural or medical diagnosis.
-    </div>
+⚠️ <b>Note:</b> This AI model has been developed and evaluated as part of an 
+<b>academic research project</b>.  
+While the system demonstrates effective performance under controlled conditions, 
+the prediction accuracy is based on the trained dataset and has <b>not yet been 
+validated for large-scale or real-world agricultural deployment</b>.  
+Future enhancements such as dataset expansion, re-training, and model optimization 
+may further improve reliability.  
+Therefore, the outputs should be used for <b>educational and research reference only</b>, 
+and not as a substitute for professional agricultural or medical assessment.
+
     """, unsafe_allow_html=True)
     
     start_cam = st.checkbox("Start Camera")
