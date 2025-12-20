@@ -335,36 +335,37 @@ with tabs[3]:
     Our objective is to develop a practical and user-friendly AI-based system 
     for automated betel leaf disease detection.
     </div>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
     <ul style="font-size:16px; line-height:1.8;">
+
         <li>
             <b>Abdul Rawoof M</b><br>
             <i>Deep Learning Model Development & Image Preprocessing</i><br>
             Registration No: 221201001<br>
-            Email: <a href="mailto:221201001@rajalakshmi.edu.in">221201001@rajalakshmi.edu.in</a>
+            Email: <a href="mailto:221201001@rajalakshmi.edu.in">
+            221201001@rajalakshmi.edu.in</a>
         </li><br>
 
         <li>
             <b>Akash Raghuram R L</b><br>
             <i>Application Development & System Integration</i><br>
             Registration No: 221201004<br>
-            Email: <a href="mailto:221201004@rajalakshmi.edu.in">221201004@rajalakshmi.edu.in</a>
+            Email: <a href="mailto:221201004@rajalakshmi.edu.in">
+            221201004@rajalakshmi.edu.in</a>
         </li><br>
 
         <li>
             <b>Sarath Kumar R</b><br>
             <i>Dataset Preparation, Testing & Performance Evaluation</i><br>
             Registration No: 221201048<br>
-            Email: <a href="mailto:221201048@rajalakshmi.edu.in">221201048@rajalakshmi.edu.in</a>
+            Email: <a href="mailto:221201048@rajalakshmi.edu.in">
+            221201048@rajalakshmi.edu.in</a>
         </li>
+
     </ul>
     """, unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-
 
 # -----------------------
 # FEEDBACK
