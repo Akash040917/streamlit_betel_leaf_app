@@ -60,6 +60,11 @@ st.markdown(f"""
 footer {{
   display:none;
 }}
+
+/* ✅ ADDED: remove empty white box issue */
+.block-container > div:has(> div:empty) {{
+    display: none;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -81,11 +86,6 @@ SEARCH_DIRS = [
 
 @st.cache_resource
 def load_model_from_paths():
-    """
-    Tries all combinations of SEARCH_DIRS x MODEL_BASENAMES.
-    Continues on load errors and returns first successfully loaded model.
-    Returns (model_or_None, path_tried_or_None, error_message_or_None)
-    """
     attempted = []
     load_errors = []
     for d in SEARCH_DIRS:
@@ -104,8 +104,7 @@ def load_model_from_paths():
 
     attempted_str = "\n".join(attempted)
     if load_errors:
-        err_msg = "Tried these paths (files exist and some failed to load or were missing):\n"
-        err_msg += attempted_str + "\n\nLoad errors:\n" + "\n".join(load_errors)
+        err_msg = "Tried these paths:\n" + attempted_str + "\n\nLoad errors:\n" + "\n".join(load_errors)
     else:
         err_msg = "Model not found. Tried paths:\n" + attempted_str
     return None, None, err_msg
@@ -119,24 +118,17 @@ CLASS_NAMES = [
     "Healthy_Red",
 ]
 
-# ==== NEW: use EfficientNetV2 preprocessing exactly like Colab ====
 from tensorflow.keras.applications.efficientnet_v2 import preprocess_input
 
 if model is not None:
     IMG_H, IMG_W = model.input_shape[1], model.input_shape[2]
 else:
-    IMG_H, IMG_W = 300, 300  # fallback, should not be used normally
+    IMG_H, IMG_W = 300, 300
 
 # -----------------------
-# Helper functions (FIXED)
+# Helper functions
 # -----------------------
 def preprocess_pil_image_advanced(pil_img, target_size=None):
-    """
-    Preprocess exactly like training/Colab:
-    - RGB
-    - resize to model input size
-    - EfficientNetV2 preprocess_input
-    """
     if target_size is None:
         target_size = (IMG_W, IMG_H)
 
@@ -145,15 +137,11 @@ def preprocess_pil_image_advanced(pil_img, target_size=None):
     pil_img = pil_img.resize(target_size, resample=Image.LANCZOS)
 
     arr = np.array(pil_img).astype(np.float32)
-    arr = preprocess_input(arr)          # ✅ same as Colab
+    arr = preprocess_input(arr)
     arr = np.expand_dims(arr, axis=0)
     return arr
 
 def tta_predictions(model, pil_img, tta_transforms=None, target_size=None):
-    """
-    Simple TTA: original + mirror + small rotations.
-    Always uses the same preprocessing as training.
-    """
     if target_size is None:
         target_size = (IMG_W, IMG_H)
 
@@ -171,7 +159,6 @@ def tta_predictions(model, pil_img, tta_transforms=None, target_size=None):
         arr = preprocess_pil_image_advanced(im2, target_size)
         preds = model.predict(arr, verbose=0)[0]
 
-        # if last layer is already softmax, sum ≈ 1
         if abs(np.sum(preds) - 1.0) < 0.05:
             probs = preds
         else:
@@ -183,31 +170,22 @@ def tta_predictions(model, pil_img, tta_transforms=None, target_size=None):
     return avg_probs
 
 def predict_with_tta(model, pil_img, T=1.0):
-    """
-    Main prediction helper used by UI.
-    Returns (index, probabilities).
-    """
     avg_probs = tta_predictions(model, pil_img, target_size=(IMG_W, IMG_H))
-
-    # Optional temperature scaling (T != 1.0 sharpens or smooths)
-    if T is not None and T != 1.0:
-        logits = np.log(avg_probs + 1e-12)
-        logits = logits / T
+    if T != 1.0:
+        logits = np.log(avg_probs + 1e-12) / T
         avg_probs = tf.nn.softmax(logits).numpy()
-
-    idx = int(np.argmax(avg_probs))
-    return idx, avg_probs
+    return int(np.argmax(avg_probs)), avg_probs
 
 def file_size_human(path):
     try:
         s = os.path.getsize(path)
         for unit in ['B','KB','MB','GB']:
-            if s < 1024.0:
+            if s < 1024:
                 return f"{s:3.1f}{unit}"
-            s /= 1024.0
-        return f"{s:.1f}TB"
+            s /= 1024
     except:
-        return "Unknown"
+        pass
+    return "Unknown"
 
 # -----------------------
 # Tabs
@@ -231,28 +209,13 @@ with tabs[0]:
             st.success(f"Model loaded from `{model_path}` ({file_size_human(model_path)})")
         else:
             st.error("Model not found or failed to load.")
-            if model_err:
-                with st.expander("Model loader details (click to expand)"):
-                    st.code(model_err)
-                st.info(
-                    "Make sure the model file is committed to the repository under one of these folders:\n"
-                    + ", ".join(SEARCH_DIRS)
-                )
-            st.markdown(
-                "Make sure `models/betel_leaf_efficientnetv2.keras` is present in the repo "
-                "or enable Git LFS and re-add the model."
-            )
-        st.markdown("### Sources")
-        st.markdown("- Kaggle dataset: https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification")
-        st.markdown("- GitHub repo: https://github.com/Akash040917/streamlit_betel_leaf_app")
-        st.markdown("- Google Colab Repository: https://colab.research.google.com/drive/1N9yE22hXCalUVC_ir7nzaj9e7pgolTVu?usp=sharing")
     with col2:
         st.markdown("### Quick Actions")
         st.markdown("""
-        - 🧠 **Run Disease Detection** → Go to the *Predict* tab and upload or capture an image.  
-        - 🧬 **Learn About Betel Leaves** → Visit the *About Betel Leaf* tab for details and varieties.  
-        - 👨‍💻 **Meet the Team** → Check out the *About Us* tab to know our developers.  
-        - 💬 **Share Your Thoughts** → Use the *Feedback* tab to help us improve the app.
+        - 🧠 **Run Disease Detection**  
+        - 🧬 **Learn About Betel Leaves**  
+        - 👨‍💻 **Meet the Team**  
+        - 💬 **Share Feedback**
         """)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -263,6 +226,19 @@ with tabs[1]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Predict Betel Leaf Condition</div>', unsafe_allow_html=True)
 
+    # ✅ ADDED NOTE (ONLY ADDITION)
+    st.markdown("""
+    <div style="
+        background:#fff7e6;
+        border-left:5px solid #f4a100;
+        padding:10px;
+        border-radius:6px;
+        margin-bottom:12px;
+        font-size:14px;">
+    ⚠️ <b>Note:</b> This AI model is developed for <b>testing and training purposes only</b>.
+    </div>
+    """, unsafe_allow_html=True)
+
     start_cam = st.checkbox("Start Camera")
     if start_cam:
         captured = st.camera_input("Take a photo")
@@ -270,30 +246,18 @@ with tabs[1]:
             img = Image.open(captured)
             st.image(img, caption="Preview", width=300)
             if model:
-                with st.spinner("Predicting..."):
-                    idx, probs = predict_with_tta(model, img)
-                    st.success(f"Prediction: {CLASS_NAMES[idx]}")
-                    st.write(f"Confidence: {100*np.max(probs):.2f}%")
-                    df_probs = pd.DataFrame({"class": CLASS_NAMES, "probability": probs*100})
-                    st.table(df_probs.style.format({"probability": "{:.2f}%"}))
-            else:
-                st.warning("Model not available. See Home tab for details.")
+                idx, probs = predict_with_tta(model, img)
+                st.success(f"Prediction: {CLASS_NAMES[idx]}")
 
     st.markdown("---")
-    st.subheader("Or upload an image")
     uploaded_file = st.file_uploader("Upload betel leaf image", type=["jpg","jpeg","png"])
     if uploaded_file:
         img = Image.open(uploaded_file)
         st.image(img, caption="Preview", width=300)
         if model:
-            with st.spinner("Predicting..."):
-                idx, probs = predict_with_tta(model, img)
-                st.success(f"Prediction: {CLASS_NAMES[idx]}")
-                st.write(f"Confidence: {100*np.max(probs):.2f}%")
-                df_probs = pd.DataFrame({"class": CLASS_NAMES, "probability": probs*100})
-                st.table(df_probs.style.format({"probability": "{:.2f}%"}))
-        else:
-            st.warning("Model not available. See Home tab for details.")
+            idx, probs = predict_with_tta(model, img)
+            st.success(f"Prediction: {CLASS_NAMES[idx]}")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -303,28 +267,13 @@ with tabs[2]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">About Piper betle (Betel Leaf)</div>', unsafe_allow_html=True)
     st.image("streamlit_betel_leaf_app/images/betel.jpg", caption="Piper betle", width=450)
-    st.markdown("""
-    **Piper betle** is a perennial vine from the Piperaceae family, widely cultivated in South and Southeast Asia.  
-    Heart-shaped leaves are used in traditional medicine, culinary applications, and cultural rituals.  
-    Key phytochemicals include **hydroxychavicol** and **eugenol**, which exhibit antimicrobial and antioxidant properties.
-    """)
-    st.markdown("### Varieties & Classes 🌿")
-    st.markdown("""
-    **Betel leaves** are broadly categorized based on color and regional variety:
-    - 🟢 **Green Varieties:** Common in South India; softer texture and mild aroma.  
-    - 🔴 **Red Varieties:** Thicker leaves, stronger flavor, preferred for traditional uses.  
-    - 📍 **Regional Cultivars:** Includes *Banarasi Pan*, *Kalkatta Pan*, and other GI-protected varieties of India.  
-    - 🌱 Each type differs in taste, medicinal value, and oil content.
-    """)
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
 # ABOUT US
 # -----------------------
 with tabs[3]:
-
     st.header("Our Team")
-
     st.write(
         "We are final-year Mechatronics Engineering students with a strong interest in "
         "Artificial Intelligence and Deep Learning.\n\n"
@@ -335,22 +284,17 @@ with tabs[3]:
     )
 
     st.markdown("""
-    ### 👥 Team Members
-
     **• Abdul Rawoof M**  
     *Deep Learning Model Development & Image Preprocessing*  
     Registration No: 221201001  
-    Email: 221201001@rajalakshmi.edu.in  
 
     **• Akash Raghuram R L**  
     *Application Development & System Integration*  
     Registration No: 221201004  
-    Email: 221201004@rajalakshmi.edu.in  
 
     **• Sarath Kumar R**  
     *Dataset Preparation, Testing & Performance Evaluation*  
     Registration No: 221201048  
-    Email: 221201048@rajalakshmi.edu.in  
     """)
 
 # -----------------------
@@ -362,18 +306,12 @@ with tabs[4]:
     with st.form("feedback_form", clear_on_submit=True):
         fname = st.text_input("Full name")
         femail = st.text_input("Email")
-        ftype = st.selectbox("Feedback type", ["Bug", "Feature", "Data", "Other"])
-        rating = st.slider("Rate app (1-5)", 1, 5, 4)
         fmsg = st.text_area("Feedback")
         submit = st.form_submit_button("Submit")
         if submit:
-            try:
-                with open("feedback.csv", "a", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), fname, femail, ftype, rating, fmsg, model_path])
-                st.success("Feedback saved!")
-            except Exception as e:
-                st.error(f"Failed: {e}")
+            with open("feedback.csv", "a", newline="", encoding="utf-8") as f:
+                csv.writer(f).writerow([time.strftime("%Y-%m-%d %H:%M:%S"), fname, femail, fmsg])
+            st.success("Feedback saved!")
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -384,6 +322,7 @@ st.markdown(f"""
 © {time.strftime('%Y')} ProjectASA2025 — Built with Streamlit & TensorFlow
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
