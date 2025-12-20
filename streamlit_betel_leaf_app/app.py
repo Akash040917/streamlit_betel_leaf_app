@@ -272,15 +272,10 @@ with tabs[1]:
         border-radius:6px;
         margin-bottom:12px;
         font-size:14px;">
-⚠️ <b>Note:</b> This AI model has been developed and evaluated as part of an 
-<b>academic research project</b>.  
-While the system demonstrates effective performance under controlled conditions, 
-the prediction accuracy is based on the trained dataset and has <b>not yet been 
-validated for large-scale or real-world agricultural deployment</b>.  
-Future enhancements such as dataset expansion, re-training, and model optimization 
-may further improve reliability.  
-Therefore, the outputs should be used for <b>educational and research reference only</b>, 
-and not as a substitute for professional agricultural or medical assessment.
+⚠️ <b>Note:</b> This AI model is developed as part of an <b>academic research project</b>.  
+Predictions are generated using the trained dataset and have been evaluated on sample real-world images, 
+but the results are <b>research-oriented and not standardized for large-scale agricultural use</b>.  
+Outputs are intended for <b>educational and research purposes</b>, with scope for further model enhancement.
 
     """, unsafe_allow_html=True)
     
