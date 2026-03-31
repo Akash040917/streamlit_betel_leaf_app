@@ -7,3 +7,5 @@ protobuf<5
 matplotlib
 pandas
 scikit-learn
+gspread
+oauth2client
