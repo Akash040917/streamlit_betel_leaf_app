@@ -89,6 +89,17 @@ html, body, .stApp {
   letter-spacing: 0.4px;
 }
 
+/* ── Tab panel acts as the card ── */
+[data-testid="stTabsContent"] > div[role="tabpanel"] {
+  background: var(--surface) !important;
+  border-radius: 0 var(--radius) var(--radius) var(--radius) !important;
+  padding: 28px 32px !important;
+  box-shadow: var(--shadow) !important;
+  border: 1px solid var(--border) !important;
+  border-top: none !important;
+  margin-bottom: 20px !important;
+}
+
 /* ── Tabs ── */
 [data-testid="stTabs"] button {
   font-family: 'DM Sans', sans-serif !important;
@@ -679,7 +690,6 @@ tabs = st.tabs(["🏠  Home", "🔍  Predict", "🌿  About Betel Leaf", "👥  
 # HOME
 # -----------------------
 with tabs[0]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="page-title">Betel Leaf Disease Detection</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Professional AI tool for detecting betel leaf diseases using deep learning.</div>', unsafe_allow_html=True)
 
@@ -740,13 +750,10 @@ with tabs[0]:
 </div>
         """, unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
 # -----------------------
 # PREDICT
 # -----------------------
 with tabs[1]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="page-title">Predict Betel Leaf Condition</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Upload an image or use your camera to detect diseases in real-time.</div>', unsafe_allow_html=True)
 
@@ -758,7 +765,6 @@ with tabs[1]:
     </div>
     """, unsafe_allow_html=True)
 
-    # Camera section
     st.markdown('<div class="section-heading">📷 Camera Capture</div>', unsafe_allow_html=True)
     start_cam = st.checkbox("Enable Camera")
     if start_cam:
@@ -778,7 +784,6 @@ with tabs[1]:
 
     st.markdown('<div class="divider-text">or upload a file</div>', unsafe_allow_html=True)
 
-    # Upload section
     st.markdown('<div class="section-heading">📁 Upload Image</div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader("Choose a betel leaf image", type=["jpg","jpeg","png"], label_visibility="collapsed")
     if uploaded_file:
@@ -794,13 +799,10 @@ with tabs[1]:
             else:
                 st.warning("Model not available. See Home tab for details.")
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
 # -----------------------
 # ABOUT BETEL LEAF
 # -----------------------
 with tabs[2]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="page-title">About Piper betle (Betel Leaf)</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Botany, traditional uses, and cultivar classification.</div>', unsafe_allow_html=True)
 
@@ -836,13 +838,10 @@ Key phytochemicals include **hydroxychavicol** and **eugenol**, which exhibit st
 </div>
         """, unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
 # -----------------------
 # ABOUT US
 # -----------------------
 with tabs[3]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="page-title">Our Team</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Final-year Mechatronics Engineering students — Rajalakshmi Engineering College.</div>', unsafe_allow_html=True)
 
@@ -890,8 +889,6 @@ with tabs[3]:
             </div>
             """, unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
 def save_to_gsheet(data):
     scope = [
         "https://spreadsheets.google.com/feeds",
@@ -907,8 +904,9 @@ def save_to_gsheet(data):
 # -----------------------
 # FEEDBACK
 # -----------------------
+import re
+
 with tabs[4]:
-    st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="page-title">Share Your Feedback</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Help us improve the app — your thoughts matter.</div>', unsafe_allow_html=True)
 
@@ -923,11 +921,27 @@ with tabs[4]:
                 femail = st.text_input("Email Address", placeholder="you@example.com")
 
             ftype = st.selectbox("Feedback Type", ["Bug Report", "Feature Request", "Dataset Issue", "Other"])
-            rating = st.slider("Overall Rating", 1, 5, 4)
 
-            rating_labels = {1: "😞 Poor", 2: "😐 Fair", 3: "🙂 Good", 4: "😊 Very Good", 5: "🤩 Excellent"}
+            # Slider + live label — uses on_change via session_state key
+            rating = st.slider(
+                "Overall Rating",
+                min_value=1, max_value=5, value=3,
+                key="rating_slider",
+                help="1 = Very Bad · 2 = Bad · 3 = Neutral · 4 = Good · 5 = Excellent"
+            )
+            rating_labels = {
+                1: ("😞", "Very Bad",  "#c0392b", "#fdecea"),
+                2: ("😐", "Bad",       "#d35400", "#fef0e6"),
+                3: ("🙂", "Neutral",   "#7a6000", "#fef9ec"),
+                4: ("😊", "Good",      "#1a5c30", "#e6f4ea"),
+                5: ("🤩", "Excellent", "#1a4a7a", "#e8f0fb"),
+            }
+            icon, label, color, bg = rating_labels[rating]
             st.markdown(
-                f'<span class="badge badge-green">{rating_labels[rating]}</span>',
+                f'<div style="display:inline-flex;align-items:center;gap:7px;'
+                f'background:{bg};border:1.5px solid {color};border-radius:20px;'
+                f'padding:5px 14px;font-size:13px;font-weight:600;color:{color};margin-top:4px;">'
+                f'{icon} {label} ({rating}/5)</div>',
                 unsafe_allow_html=True
             )
 
@@ -937,7 +951,9 @@ with tabs[4]:
 
             if submit:
                 if not fname or not femail or not fmsg:
-                    st.warning("⚠️ Please fill in your name, email, and message before submitting.")
+                    st.warning("⚠️ Please fill in your name, email, and message.")
+                elif not re.match(r"[^@]+@[^@]+\.[^@]+", femail):
+                    st.warning("⚠️ Please enter a valid email address.")
                 else:
                     try:
                         with st.spinner("Submitting feedback..."):
@@ -952,9 +968,9 @@ with tabs[4]:
 
     with col_tip:
         st.markdown("""
-        <div class="card-sm" style="margin-top:8px;">
+        <div class="card-sm" style="margin-top:4px;">
           <div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:10px;">💡 Tips for great feedback</div>
-          <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.9;">
             ✔ Be specific about the issue<br>
             ✔ Include the image type if relevant<br>
             ✔ Mention the prediction result you saw<br>
@@ -962,8 +978,6 @@ with tabs[4]:
           </div>
         </div>
         """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
 # Footer
