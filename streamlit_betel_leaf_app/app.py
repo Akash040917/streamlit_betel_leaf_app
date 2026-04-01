@@ -1,4 +1,3 @@
-st.write(st.secrets)
 # app.py
 import streamlit as st
 import tensorflow as tf
@@ -19,6 +18,7 @@ except Exception:
 # -----------------------
 # Page config & style
 # -----------------------
+st.write(st.secrets)
 st.set_page_config(page_title="Betel Leaf Disease Detector", layout="wide")
 
 PRIMARY = "#1f6f3a"
