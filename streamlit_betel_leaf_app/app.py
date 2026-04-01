@@ -687,19 +687,17 @@ with tabs[0]:
 
     with col1:
         st.markdown('<div class="section-heading">📊 Dataset & Model</div>', unsafe_allow_html=True)
-        st.markdown('<div class="card-sm">', unsafe_allow_html=True)
-        st.markdown("Trained on **~10,000 images** across **4 disease classes** using EfficientNetV2.", unsafe_allow_html=True)
         st.markdown(
-            " ".join([
+            '<div class="card-sm">Trained on <strong>~10,000 images</strong> across <strong>4 disease classes</strong> using EfficientNetV2.<br><br>'
+            + " ".join([
                 f'<span class="badge badge-green">{CLASS_META[c]["icon"]} {c.replace("_"," ")}</span>'
                 for c in CLASS_NAMES
-            ]),
+            ])
+            + '</div>',
             unsafe_allow_html=True
         )
-        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown('<div class="section-heading">⚙️ Model Status</div>', unsafe_allow_html=True)
-        st.markdown('<div class="card-sm">', unsafe_allow_html=True)
         if model is not None and model_path:
             st.success(f"✅ Model loaded from `{model_path}` ({file_size_human(model_path)})")
         else:
@@ -707,23 +705,17 @@ with tabs[0]:
             if model_err:
                 with st.expander("Model loader details"):
                     st.code(model_err)
-                st.info(
-                    "Ensure model file is under one of: "
-                    + ", ".join(SEARCH_DIRS)
-                )
-            st.markdown(
-                "Make sure `models/betel_leaf_efficientnetv2.keras` is present and Git LFS is enabled."
-            )
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.info("Ensure model file is under one of: " + ", ".join(SEARCH_DIRS))
+            st.markdown("Make sure `models/betel_leaf_efficientnetv2.keras` is present and Git LFS is enabled.")
 
         st.markdown('<div class="section-heading">🔗 Resources</div>', unsafe_allow_html=True)
-        st.markdown('<div class="card-sm">', unsafe_allow_html=True)
         st.markdown("""
-- 📦 [Kaggle Dataset](https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification)
-- 💻 [GitHub Repository](https://github.com/Akash040917/streamlit_betel_leaf_app)
-- 🧪 [Google Colab Notebook](https://colab.research.google.com/drive/1N9yE22hXCalUVC_ir7nzaj9e7pgolTVu?usp=sharing)
-        """)
-        st.markdown('</div>', unsafe_allow_html=True)
+<div class="card-sm" style="font-size:13.5px;line-height:2.2;">
+  📦 <a href="https://www.kaggle.com/datasets/achmadbauravindah/betel-leaf-disease-classification" target="_blank" style="color:var(--primary-light);">Kaggle Dataset</a><br>
+  💻 <a href="https://github.com/Akash040917/streamlit_betel_leaf_app" target="_blank" style="color:var(--primary-light);">GitHub Repository</a><br>
+  🧪 <a href="https://colab.research.google.com/drive/1N9yE22hXCalUVC_ir7nzaj9e7pgolTVu?usp=sharing" target="_blank" style="color:var(--primary-light);">Google Colab Notebook</a>
+</div>
+        """, unsafe_allow_html=True)
 
     with col2:
         st.markdown('<div class="section-heading">⚡ Quick Actions</div>', unsafe_allow_html=True)
@@ -944,15 +936,19 @@ with tabs[4]:
             submit = st.form_submit_button("📨 Submit Feedback")
 
             if submit:
-                try:
-                    row = [
-                        time.strftime("%Y-%m-%d %H:%M:%S"),
-                        fname, femail, ftype, rating, fmsg, model_path
-                    ]
-                    save_to_gsheet(row)
-                    st.success("✅ Thank you! Your feedback has been recorded.")
-                except Exception as e:
-                    st.error(f"Submission failed: {e}")
+                if not fname or not femail or not fmsg:
+                    st.warning("⚠️ Please fill in your name, email, and message before submitting.")
+                else:
+                    try:
+                        with st.spinner("Submitting feedback..."):
+                            row = [
+                                time.strftime("%Y-%m-%d %H:%M:%S"),
+                                fname, femail, ftype, rating, fmsg, model_path
+                            ]
+                            save_to_gsheet(row)
+                        st.success("✅ Thank you! Your feedback has been recorded.")
+                    except Exception as e:
+                        st.error(f"Submission failed: {e}")
 
     with col_tip:
         st.markdown("""
