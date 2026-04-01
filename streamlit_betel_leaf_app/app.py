@@ -5,6 +5,8 @@ import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
 import os, io, csv, time, pandas as pd
 import traceback
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # Optional matplotlib plotting
 try:
@@ -369,27 +371,56 @@ with tabs[3]:
     Email: 221201048@rajalakshmi.edu.in  
     """)
 
+def save_to_gsheet(data):
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+        st.secrets["gcp_service_account"], scope
+    )
+
+    client = gspread.authorize(creds)
+    sheet = client.open("Feedback").sheet1
+
+    sheet.append_row(data)
+    
 # -----------------------
 # FEEDBACK
 # -----------------------
 with tabs[4]:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown('<div class="header-title">Feedback</div>', unsafe_allow_html=True)
+
     with st.form("feedback_form", clear_on_submit=True):
         fname = st.text_input("Full name")
         femail = st.text_input("Email")
         ftype = st.selectbox("Feedback type", ["Bug", "Feature", "Data", "Other"])
         rating = st.slider("Rate app (1-5)", 1, 5, 4)
         fmsg = st.text_area("Feedback")
+
         submit = st.form_submit_button("Submit")
+
+        # ✅ MOVE INSIDE
         if submit:
             try:
-                with open("feedback.csv", "a", newline="", encoding="utf-8") as f:
-                    writer = csv.writer(f)
-                    writer.writerow([time.strftime("%Y-%m-%d %H:%M:%S"), fname, femail, ftype, rating, fmsg, model_path])
-                st.success("Feedback saved!")
+                row = [
+                    time.strftime("%Y-%m-%d %H:%M:%S"),
+                    fname,
+                    femail,
+                    ftype,
+                    rating,
+                    fmsg,
+                    model_path
+                ]
+
+                save_to_gsheet(row)
+                st.success("Feedback saved successfully!")
+
             except Exception as e:
                 st.error(f"Failed: {e}")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
