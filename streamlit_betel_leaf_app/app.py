@@ -766,7 +766,7 @@ with tabs[1]:
             col_img, col_res = st.columns([1, 1], gap="large")
             with col_img:
                 img = Image.open(captured)
-                st.image(img, caption="Captured Image", width=350)
+                st.image(img, caption="Captured Image", use_container_width=True)
             with col_res:
                 if model:
                     with st.spinner("Analysing with TTA…"):
@@ -901,7 +901,6 @@ import re
 
 with tabs[4]:
 
-    # ✅ Correct placement (NO indentation error)
     if "submitted" not in st.session_state:
         st.session_state.submitted = False
 
@@ -911,6 +910,35 @@ with tabs[4]:
     col_form, col_tip = st.columns([2, 1], gap="large")
 
     with col_form:
+
+        # 🔥 MOVE SLIDER OUTSIDE FORM (THIS IS THE FIX)
+        rating = st.slider(
+            "Overall Rating",
+            min_value=1,
+            max_value=5,
+            value=st.session_state.get("rating", 3),
+            key="rating"
+        )
+
+        rating_labels = {
+            1: ("😞", "Very Bad",  "#c0392b", "#fdecea"),
+            2: ("😐", "Bad",       "#d35400", "#fef0e6"),
+            3: ("🙂", "Neutral",   "#7a6000", "#fef9ec"),
+            4: ("😊", "Good",      "#1a5c30", "#e6f4ea"),
+            5: ("🤩", "Excellent", "#1a4a7a", "#e8f0fb"),
+        }
+
+        icon, label, color, bg = rating_labels[rating]
+
+        st.markdown(
+            f'<div style="display:inline-flex;align-items:center;gap:7px;'
+            f'background:{bg};border:1.5px solid {color};border-radius:20px;'
+            f'padding:5px 14px;font-size:13px;font-weight:600;color:{color};margin-top:4px;margin-bottom:10px;">'
+            f'{icon} {label} ({rating}/5)</div>',
+            unsafe_allow_html=True
+        )
+
+        # 🔽 FORM STARTS HERE (WITHOUT SLIDER)
         with st.form("feedback_form", clear_on_submit=True):
 
             c1, c2 = st.columns(2)
@@ -924,33 +952,6 @@ with tabs[4]:
                 ["Bug Report", "Feature Request", "Dataset Issue", "Other"]
             )
 
-            # ✅ FIXED SLIDER (real-time update)
-            rating = st.slider(
-                "Overall Rating",
-                min_value=1,
-                max_value=5,
-                value=st.session_state.get("rating", 3),
-                key="rating"
-            )
-
-            rating_labels = {
-                1: ("😞", "Very Bad",  "#c0392b", "#fdecea"),
-                2: ("😐", "Bad",       "#d35400", "#fef0e6"),
-                3: ("🙂", "Neutral",   "#7a6000", "#fef9ec"),
-                4: ("😊", "Good",      "#1a5c30", "#e6f4ea"),
-                5: ("🤩", "Excellent", "#1a4a7a", "#e8f0fb"),
-            }
-
-            icon, label, color, bg = rating_labels[rating]
-
-            st.markdown(
-                f'<div style="display:inline-flex;align-items:center;gap:7px;'
-                f'background:{bg};border:1.5px solid {color};border-radius:20px;'
-                f'padding:5px 14px;font-size:13px;font-weight:600;color:{color};margin-top:4px;">'
-                f'{icon} {label} ({rating}/5)</div>',
-                unsafe_allow_html=True
-            )
-
             fmsg = st.text_area(
                 "Your Message",
                 placeholder="Describe your experience, a bug you found, or a feature you'd love…",
@@ -959,7 +960,6 @@ with tabs[4]:
 
             submit = st.form_submit_button("📨 Submit Feedback")
 
-            # ✅ FINAL SUBMIT LOGIC (duplicate fix included)
             if submit:
 
                 if st.session_state.submitted:
@@ -979,13 +979,13 @@ with tabs[4]:
                                 fname,
                                 femail,
                                 ftype,
-                                rating,
+                                rating,   # 🔥 still used here
                                 fmsg,
                                 model_path
                             ]
                             save_to_gsheet(row)
 
-                        st.session_state.submitted = True  # 🔥 important
+                        st.session_state.submitted = True
                         st.success("✅ Thank you! Your feedback has been recorded.")
 
                     except Exception as e:
@@ -1003,7 +1003,7 @@ with tabs[4]:
           </div>
         </div>
         """, unsafe_allow_html=True)
-
+            
 # -----------------------
 # Footer
 # -----------------------
