@@ -8,13 +8,6 @@ import traceback
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# Optional matplotlib plotting
-try:
-    import matplotlib.pyplot as plt
-    HAS_MPL = True
-except Exception:
-    HAS_MPL = False
-
 # -----------------------
 # Page config & style
 # -----------------------
@@ -773,7 +766,7 @@ with tabs[1]:
             col_img, col_res = st.columns([1, 1], gap="large")
             with col_img:
                 img = Image.open(captured)
-                st.image(img, caption="Captured Image", use_container_width=True)
+                st.image(img, caption="Captured Image", width=350)
             with col_res:
                 if model:
                     with st.spinner("Analysing with TTA…"):
@@ -790,7 +783,7 @@ with tabs[1]:
         col_img, col_res = st.columns([1, 1], gap="large")
         with col_img:
             img = Image.open(uploaded_file)
-            st.image(img, caption="Uploaded Image", use_container_width=True)
+            st.image(img, caption="Uploaded Image", width=350)
         with col_res:
             if model:
                 with st.spinner("Analysing with TTA…"):
@@ -907,6 +900,11 @@ def save_to_gsheet(data):
 import re
 
 with tabs[4]:
+
+    # ✅ Correct placement (NO indentation error)
+    if "submitted" not in st.session_state:
+        st.session_state.submitted = False
+
     st.markdown('<div class="page-title">Share Your Feedback</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Help us improve the app — your thoughts matter.</div>', unsafe_allow_html=True)
 
@@ -914,21 +912,27 @@ with tabs[4]:
 
     with col_form:
         with st.form("feedback_form", clear_on_submit=True):
+
             c1, c2 = st.columns(2)
             with c1:
                 fname = st.text_input("Full Name", placeholder="Your name")
             with c2:
                 femail = st.text_input("Email Address", placeholder="you@example.com")
 
-            ftype = st.selectbox("Feedback Type", ["Bug Report", "Feature Request", "Dataset Issue", "Other"])
+            ftype = st.selectbox(
+                "Feedback Type",
+                ["Bug Report", "Feature Request", "Dataset Issue", "Other"]
+            )
 
-            # Slider + live label — uses on_change via session_state key
+            # ✅ FIXED SLIDER (real-time update)
             rating = st.slider(
                 "Overall Rating",
-                min_value=1, max_value=5, value=3,
-                key="rating_slider",
-                help="1 = Very Bad · 2 = Bad · 3 = Neutral · 4 = Good · 5 = Excellent"
+                min_value=1,
+                max_value=5,
+                value=st.session_state.get("rating", 3),
+                key="rating"
             )
+
             rating_labels = {
                 1: ("😞", "Very Bad",  "#c0392b", "#fdecea"),
                 2: ("😐", "Bad",       "#d35400", "#fef0e6"),
@@ -936,7 +940,9 @@ with tabs[4]:
                 4: ("😊", "Good",      "#1a5c30", "#e6f4ea"),
                 5: ("🤩", "Excellent", "#1a4a7a", "#e8f0fb"),
             }
+
             icon, label, color, bg = rating_labels[rating]
+
             st.markdown(
                 f'<div style="display:inline-flex;align-items:center;gap:7px;'
                 f'background:{bg};border:1.5px solid {color};border-radius:20px;'
@@ -945,24 +951,43 @@ with tabs[4]:
                 unsafe_allow_html=True
             )
 
-            fmsg = st.text_area("Your Message", placeholder="Describe your experience, a bug you found, or a feature you'd love…", height=120)
+            fmsg = st.text_area(
+                "Your Message",
+                placeholder="Describe your experience, a bug you found, or a feature you'd love…",
+                height=120
+            )
 
             submit = st.form_submit_button("📨 Submit Feedback")
 
+            # ✅ FINAL SUBMIT LOGIC (duplicate fix included)
             if submit:
-                if not fname or not femail or not fmsg:
+
+                if st.session_state.submitted:
+                    st.warning("⚠️ Feedback already submitted. Refresh to submit again.")
+
+                elif not fname or not femail or not fmsg:
                     st.warning("⚠️ Please fill in your name, email, and message.")
+
                 elif not re.match(r"[^@]+@[^@]+\.[^@]+", femail):
                     st.warning("⚠️ Please enter a valid email address.")
+
                 else:
                     try:
                         with st.spinner("Submitting feedback..."):
                             row = [
                                 time.strftime("%Y-%m-%d %H:%M:%S"),
-                                fname, femail, ftype, rating, fmsg, model_path
+                                fname,
+                                femail,
+                                ftype,
+                                rating,
+                                fmsg,
+                                model_path
                             ]
                             save_to_gsheet(row)
+
+                        st.session_state.submitted = True  # 🔥 important
                         st.success("✅ Thank you! Your feedback has been recorded.")
+
                     except Exception as e:
                         st.error(f"Submission failed: {e}")
 
